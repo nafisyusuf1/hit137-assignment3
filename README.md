@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # HIT137 Assignment 3 – Picture Puzzle
 
 A Tkinter + OpenCV desktop game. Load a picture, and it gets cut into a grid of tiles that are randomly swapped, rotated and flipped. Put the picture back together.
@@ -69,3 +70,6 @@ Needs Python 3.9+ with Tkinter (included with the normal Windows/macOS Python in
 - Missing files, non-image files, corrupt images and tiny images all show an error message box.
 - Clicks outside the picture are ignored, and so is input after the puzzle is finished.
 - Any unexpected error is shown in a message box instead of crashing the app.
+=======
+# Assignment-3-HIT137-
+>>>>>>> origin/main
