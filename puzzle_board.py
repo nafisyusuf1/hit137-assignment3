@@ -27,13 +27,18 @@ class PuzzleBoard:
         grid_size: int,
         rng: Optional[random.Random] = None,
     ) -> None:
-        if grid_size not in (3, 4, 5):
+        if (
+            isinstance(grid_size, bool)
+            or not isinstance(grid_size, int)
+            or grid_size not in (3, 4, 5)
+        ):
             raise ValueError("Grid size must be 3, 4, or 5.")
         if len(tiles) != grid_size * grid_size:
             raise ValueError("The tile count must equal grid_size squared.")
 
         self.__tiles = list(tiles)
         self.__grid_size = grid_size
+        self.__validate_tiles(self.__tiles)
         self.__moves = 0
         self.__hints_used = 0
         self.__hint: Optional[tuple[int, int]] = None
@@ -169,7 +174,11 @@ class PuzzleBoard:
         ordered: list[Optional[Any]] = [None] * len(self.__tiles)
         for tile in self.__tiles:
             home = tile.original_index
-            if not isinstance(home, int) or not 0 <= home < len(ordered):
+            if (
+                isinstance(home, bool)
+                or not isinstance(home, int)
+                or not 0 <= home < len(ordered)
+            ):
                 raise ValueError("Every tile must have a valid original_index.")
             if ordered[home] is not None:
                 raise ValueError("Tile original_index values must be unique.")
@@ -191,6 +200,7 @@ class PuzzleBoard:
             replacement = list(tiles)
             if len(replacement) != self.__grid_size * self.__grid_size:
                 raise ValueError("The tile count must equal grid_size squared.")
+            self.__validate_tiles(replacement)
             self.__tiles = replacement
         self.__moves = 0
         self.__hints_used = 0
@@ -204,7 +214,19 @@ class PuzzleBoard:
         self.__solved = self.incorrect_count == 0
 
     def __validate_position(self, position: int) -> None:
-        if not isinstance(position, int):
+        if isinstance(position, bool) or not isinstance(position, int):
             raise TypeError("Tile position must be an integer.")
         if not 0 <= position < len(self.__tiles):
             raise IndexError("Tile position is outside the puzzle board.")
+
+    def __validate_tiles(self, tiles: Sequence[Any]) -> None:
+        original_indices = [getattr(tile, "original_index", None) for tile in tiles]
+        if any(
+            isinstance(index, bool)
+            or not isinstance(index, int)
+            or not 0 <= index < len(tiles)
+            for index in original_indices
+        ):
+            raise ValueError("Every tile must have a valid original_index.")
+        if set(original_indices) != set(range(len(tiles))):
+            raise ValueError("Tile original_index values must be unique and complete.")

@@ -93,6 +93,11 @@ class PuzzleGameTests(unittest.TestCase):
         self.assertIsNone(game.request_hint())
         self.assertEqual(game.board.moves, 0)
 
+    def test_boolean_position_is_rejected(self) -> None:
+        game = make_game()
+        with self.assertRaises(TypeError):
+            game.left_click(True)
+
     def test_status_supplies_gui_values(self) -> None:
         game = make_game()
         game.left_click(0)
