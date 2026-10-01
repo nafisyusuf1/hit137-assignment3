@@ -141,6 +141,33 @@ class PuzzleBoardTests(unittest.TestCase):
         with self.assertRaises(IndexError):
             board.rotate_at(9)
 
+    def test_boolean_position_is_rejected(self) -> None:
+        board = scrambled_board()
+        with self.assertRaises(TypeError):
+            board.tile_at(True)
+
+    def test_invalid_original_indices_are_rejected(self) -> None:
+        tiles = [FakeTile(i) for i in range(9)]
+        tiles[0].original_index = True
+        with self.assertRaises(ValueError):
+            PuzzleBoard(tiles, 3)
+
+    def test_invalid_reset_keeps_existing_board(self) -> None:
+        board = scrambled_board()
+        original_tiles = board.tiles
+        replacement = [FakeTile(i) for i in range(9)]
+        replacement[0].original_index = 1
+
+        with self.assertRaises(ValueError):
+            board.reset(replacement)
+
+        self.assertEqual(board.tiles, original_tiles)
+
+    def test_non_integer_grid_size_is_rejected(self) -> None:
+        tiles = [FakeTile(i) for i in range(9)]
+        with self.assertRaises(ValueError):
+            PuzzleBoard(tiles, 3.0)
+
 
 if __name__ == "__main__":
     unittest.main()
