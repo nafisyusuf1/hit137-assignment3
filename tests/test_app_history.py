@@ -17,6 +17,10 @@ class FakeTile:
     def flip_horizontal(self) -> None:
         self.flipped = not self.flipped
 
+    def reset_orientation(self) -> None:
+        self.rotation = 0
+        self.flipped = False
+
 
 def make_engine() -> BuiltInPuzzleEngine:
     engine = BuiltInPuzzleEngine()

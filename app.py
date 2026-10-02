@@ -127,6 +127,8 @@ class BuiltInPuzzleEngine:
         ])
 
     def swap_tiles(self, p1: tuple, p2: tuple):
+        if p1 == p2:
+            return
         self._swap_tiles(p1, p2)
         self._record_action(("swap", (p1, p2)))
 
@@ -135,8 +137,8 @@ class BuiltInPuzzleEngine:
         r2, c2 = p2
         self._tiles[r1][c1], self._tiles[r2][c2] = self._tiles[r2][c2], self._tiles[r1][c1]
 
-    def rotate_tile(self, r: int, c: int, quarter_turns: int = 1):
-        self._tiles[r][c].rotate_cw(quarter_turns)
+    def rotate_tile(self, r: int, c: int):
+        self._tiles[r][c].rotate_cw(1)
         self._record_action(("rotate", ((r, c),)))
 
     def flip_tile(self, r: int, c: int):
@@ -182,9 +184,11 @@ class BuiltInPuzzleEngine:
         elif action_type == "rotate":
             row, col = positions[0]
             self._tiles[row][col].rotate_cw(3 if reverse else 1)
-        else:
+        elif action_type == "flip":
             row, col = positions[0]
             self._tiles[row][col].flip_horizontal()
+        else:
+            raise ValueError(f"Unknown history action: {action_type}")
 
     def is_tile_correct(self, r: int, c: int) -> bool:
         t = self._tiles[r][c]
