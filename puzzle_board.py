@@ -120,6 +120,11 @@ class PuzzleBoard:
         return self.__solved
 
     @property
+    def remaining_mistakes(self) -> int:
+        """Return how many tiles still need to be fixed."""
+        return self.incorrect_count
+
+    @property
     def incorrect_count(self) -> int:
         return sum(
             not self.is_position_correct(position)

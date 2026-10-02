@@ -154,6 +154,12 @@ class PuzzleBoardTests(unittest.TestCase):
         board.solve()
         self.assertTrue(board.is_complete)
 
+    def test_board_reports_remaining_mistakes(self) -> None:
+        board = scrambled_board()
+        self.assertEqual(board.remaining_mistakes, 2)
+        board.solve()
+        self.assertEqual(board.remaining_mistakes, 0)
+
     def test_solve_restores_everything_and_clears_moves(self) -> None:
         board = scrambled_board()
         board.rotate_at(2)
