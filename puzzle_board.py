@@ -115,6 +115,11 @@ class PuzzleBoard:
         return self.__solved
 
     @property
+    def is_complete(self) -> bool:
+        """Return True when all tiles are back in their home positions."""
+        return self.__solved
+
+    @property
     def incorrect_count(self) -> int:
         return sum(
             not self.is_position_correct(position)
