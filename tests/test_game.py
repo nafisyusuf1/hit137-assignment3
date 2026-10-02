@@ -120,6 +120,14 @@ class PuzzleGameTests(unittest.TestCase):
         self.assertEqual(status["selected_position"], 0)
         self.assertFalse(status["solved"])
 
+    def test_game_can_report_hint_ready_state(self) -> None:
+        game = make_game()
+        self.assertFalse(game.has_hint)
+        game.request_hint()
+        self.assertTrue(game.has_hint)
+        game.board.rotate_at(0)
+        self.assertFalse(game.has_hint)
+
 
 if __name__ == "__main__":
     unittest.main()
