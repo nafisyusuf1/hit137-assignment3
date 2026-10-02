@@ -98,9 +98,11 @@ class PuzzleGame:
         }
 
     def __can_use(self, position: int) -> bool:
+        """Validate a tile index before applying solved-state lock rules."""
         if isinstance(position, bool):
             raise TypeError("Tile position must be an integer.")
-        # tile_at performs consistent type/range validation before any lock check.
+        # Validate the index before checking the solved lock so invalid inputs
+        # raise consistently even when the puzzle is already complete.
         self.__board.tile_at(position)
         if self.locked:
             return False
