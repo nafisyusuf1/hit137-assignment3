@@ -61,6 +61,30 @@ class SelectionOverlay(Overlay):
         return out
 
 
+class FocusOverlay(Overlay):
+    """Marks the tile currently targeted by keyboard controls."""
+
+    def __init__(self, color: tuple = (255, 190, 40), thickness: int = 2):
+        super().__init__(color, thickness)
+
+    def draw(self, image: np.ndarray, grid_size: int, **kwargs) -> np.ndarray:
+        pos = kwargs.get("focused_pos")
+        if pos is None:
+            return image
+        out = image.copy()
+        x1, y1, x2, y2 = self.get_tile_bounds(out, grid_size, pos[0], pos[1])
+        margin = self._thickness + 2
+        cv2.rectangle(
+            out,
+            (x1 + margin, y1 + margin),
+            (x2 - margin, y2 - margin),
+            self._color,
+            self._thickness,
+            cv2.LINE_AA,
+        )
+        return out
+
+
 class TickOverlay(Overlay):
     """Draws a green check mark on correctly placed tiles."""
     def __init__(self, color: tuple = (24, 180, 24), thickness: int = 2):
@@ -110,6 +134,7 @@ class OverlayRenderer:
     def __init__(self):
         self._grid = GridOverlay()
         self._sel = SelectionOverlay()
+        self._focus = FocusOverlay()
         self._tick = TickOverlay()
         self._hint = HintOverlay()
 
@@ -118,12 +143,21 @@ class OverlayRenderer:
             return None
         return self._hint.draw(image, grid_size, hint_pos=hint_home_pos)
 
-    def render_transformed(self, image: np.ndarray, grid_size: int, selected_pos=None, correct_positions=None, hint_curr_pos=None) -> np.ndarray:
+    def render_transformed(
+        self,
+        image: np.ndarray,
+        grid_size: int,
+        selected_pos=None,
+        correct_positions=None,
+        hint_curr_pos=None,
+        focused_pos=None,
+    ) -> np.ndarray:
         if image is None:
             return None
         pipeline = [
             (self._grid, {}),
             (self._tick, {"correct_positions": correct_positions or []}),
+            (self._focus, {"focused_pos": focused_pos}),
             (self._sel, {"selected_pos": selected_pos}),
             (self._hint, {"hint_pos": hint_curr_pos}),
         ]

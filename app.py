@@ -18,6 +18,20 @@ from panels import (
 )
 
 
+def move_grid_focus(
+    position: tuple[int, int],
+    row_delta: int,
+    col_delta: int,
+    grid_size: int,
+) -> tuple[int, int]:
+    """Move keyboard focus by one step while keeping it inside the puzzle."""
+    row, col = position
+    return (
+        min(max(row + row_delta, 0), grid_size - 1),
+        min(max(col + col_delta, 0), grid_size - 1),
+    )
+
+
 class Tile:
     """Encapsulates a single puzzle tile's image, home coordinates, and transformations."""
     def __init__(self, home_row: int, home_col: int, base_image: np.ndarray):
@@ -257,6 +271,7 @@ class PuzzleApp:
         self._moves = 0
         self._hints_left = self.MAX_HINTS
         self._selected_pos = None
+        self._focused_pos = (0, 0)
         self._hint_curr = None
         self._hint_home = None
         self._active = False
@@ -265,6 +280,16 @@ class PuzzleApp:
         self._build_ui()
         self._root.bind("<Control-z>", lambda _event: self._undo())
         self._root.bind("<Control-y>", lambda _event: self._redo())
+        self._root.bind("<Up>", lambda _event: self._move_keyboard_focus(-1, 0))
+        self._root.bind("<Down>", lambda _event: self._move_keyboard_focus(1, 0))
+        self._root.bind("<Left>", lambda _event: self._move_keyboard_focus(0, -1))
+        self._root.bind("<Right>", lambda _event: self._move_keyboard_focus(0, 1))
+        self._root.bind("<Return>", lambda _event: self._keyboard_select())
+        self._root.bind("<space>", lambda _event: self._keyboard_select())
+        self._root.bind("<r>", lambda _event: self._keyboard_rotate())
+        self._root.bind("<R>", lambda _event: self._keyboard_rotate())
+        self._root.bind("<f>", lambda _event: self._keyboard_flip())
+        self._root.bind("<F>", lambda _event: self._keyboard_flip())
         self._root.after(250, self._update_timer)
 
     def _configure_theme(self):
@@ -330,6 +355,7 @@ class PuzzleApp:
         self._moves = 0
         self._hints_left = self.MAX_HINTS
         self._selected_pos = None
+        self._focused_pos = (0, 0)
         self._hint_curr = None
         self._hint_home = None
         self._active = True
@@ -389,6 +415,33 @@ class PuzzleApp:
         self._status.set_message(f"Flipped tile ({r + 1}, {c + 1}) horizontally.", "#0f172a")
         self._refresh()
         self._check_win()
+
+    def _move_keyboard_focus(self, row_delta: int, col_delta: int):
+        if not self._active:
+            return "break"
+        self._focused_pos = move_grid_focus(
+            self._focused_pos,
+            row_delta,
+            col_delta,
+            self._engine.grid_size,
+        )
+        self._refresh()
+        return "break"
+
+    def _keyboard_select(self):
+        if self._active:
+            self._left_click(*self._focused_pos)
+        return "break"
+
+    def _keyboard_rotate(self):
+        if self._active:
+            self._right_click(*self._focused_pos)
+        return "break"
+
+    def _keyboard_flip(self):
+        if self._active:
+            self._shift_left_click(*self._focused_pos)
+        return "break"
 
     def _use_hint(self):
         if not self._active or self._hints_left <= 0:
@@ -473,7 +526,8 @@ class PuzzleApp:
         orig = self._renderer.render_original(self._engine.original_image, gs, self._hint_home)
         trans = self._renderer.render_transformed(
             self._engine.reassemble_image(), gs, self._selected_pos,
-            self._engine.get_correct_positions(), self._hint_curr
+            self._engine.get_correct_positions(), self._hint_curr,
+            focused_pos=self._focused_pos if self._active else None,
         )
         self._orig_panel.display_image(orig)
         self._trans_panel.display_image(trans)
