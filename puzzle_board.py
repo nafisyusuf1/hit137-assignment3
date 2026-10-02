@@ -45,6 +45,18 @@ class PuzzleBoard:
         self.__rng = rng or random.Random()
         self.__solved = self.incorrect_count == 0
 
+    def __len__(self) -> int:
+        return len(self.__tiles)
+
+    def __iter__(self):
+        return iter(self.__tiles)
+
+    def __repr__(self) -> str:
+        return (
+            f"PuzzleBoard(grid_size={self.__grid_size}, moves={self.__moves}, "
+            f"solved={self.__solved}, hints_used={self.__hints_used})"
+        )
+
     @property
     def tiles(self) -> tuple[Any, ...]:
         """Return a read-only view of the current tile order."""
