@@ -166,6 +166,12 @@ class PuzzleBoardTests(unittest.TestCase):
         board.solve()
         self.assertEqual(board.correct_tiles, 9)
 
+    def test_board_can_report_progress_percentage(self) -> None:
+        board = scrambled_board()
+        self.assertEqual(board.progress_percent, 77)
+        board.solve()
+        self.assertEqual(board.progress_percent, 100)
+
     def test_solve_restores_everything_and_clears_moves(self) -> None:
         board = scrambled_board()
         board.rotate_at(2)
