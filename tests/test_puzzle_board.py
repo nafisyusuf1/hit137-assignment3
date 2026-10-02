@@ -117,6 +117,11 @@ class PuzzleBoardTests(unittest.TestCase):
         self.assertEqual(len(board), 9)
         self.assertEqual(list(board), list(board.tiles))
 
+    def test_board_supports_indexing_and_membership(self) -> None:
+        board = scrambled_board()
+        self.assertEqual(board[0], board.tile_at(0))
+        self.assertIn(board.tile_at(0), board)
+
     def test_solve_restores_everything_and_clears_moves(self) -> None:
         board = scrambled_board()
         board.rotate_at(2)

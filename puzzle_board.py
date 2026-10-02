@@ -51,6 +51,12 @@ class PuzzleBoard:
     def __iter__(self):
         return iter(self.__tiles)
 
+    def __getitem__(self, index: int) -> Any:
+        return self.tile_at(index)
+
+    def __contains__(self, item: Any) -> bool:
+        return item in self.__tiles
+
     def __repr__(self) -> str:
         return (
             f"PuzzleBoard(grid_size={self.__grid_size}, moves={self.__moves}, "
