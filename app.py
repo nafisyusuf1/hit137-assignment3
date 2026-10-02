@@ -473,6 +473,14 @@ class PuzzleApp:
     def _solve(self):
         if not self._active:
             return
+        confirmed = messagebox.askyesno(
+            "Solve Puzzle",
+            "Are you sure you want to reveal the solution? "
+            "This will clear your move count and will not record a best time.",
+            parent=self._root,
+        )
+        if not confirmed:
+            return
         elapsed = self._stop_timer()
         self._engine.solve_all()
         self._moves = 0

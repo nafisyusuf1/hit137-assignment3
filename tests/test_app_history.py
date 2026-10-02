@@ -3,8 +3,9 @@
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
-from app import BuiltInPuzzleEngine
+from app import BuiltInPuzzleEngine, PuzzleApp
 from panels import format_elapsed_time
 
 
@@ -43,6 +44,17 @@ def snapshot(engine: BuiltInPuzzleEngine) -> tuple:
 
 
 class PuzzleEngineHistoryTests(unittest.TestCase):
+    def test_cancel_solve_keeps_game_active(self) -> None:
+        app = PuzzleApp.__new__(PuzzleApp)
+        app._active = True
+        app._root = object()
+
+        with patch("app.messagebox.askyesno", return_value=False) as confirm:
+            app._solve()
+
+        confirm.assert_called_once()
+        self.assertTrue(app._active)
+
     def test_undo_and_redo_restore_swap_rotation_and_flip(self) -> None:
         engine = make_engine()
         initial_state = snapshot(engine)
