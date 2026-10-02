@@ -53,23 +53,31 @@ class ControlPanel(BasePanel):
 class StatusPanel(BasePanel):
     """Displays Moves Used, Tiles Incorrect, and status messages."""
     def __init__(self, parent):
-        super().__init__(parent, padding=(12, 8))
+        super().__init__(parent, padding=(12, 6))
         self._moves_var = tk.StringVar(value="Moves Used: 0")
         self._inc_var = tk.StringVar(value="Tiles Incorrect: 0")
+        self._progress_var = tk.StringVar(value="0%")
         self._msg_var = tk.StringVar(value="Choose grid size and click 'Load Image' to start.")
         self._build_ui()
 
     def _build_ui(self):
-        left = ttk.Frame(self, style="Panel.TFrame")
-        left.pack(side=tk.LEFT)
-        ttk.Label(left, textvariable=self._moves_var, font=("Segoe UI", 11, "bold"), foreground="#1d4ed8", background="#f7f9fc").pack(side=tk.LEFT, padx=(0, 20))
-        ttk.Label(left, textvariable=self._inc_var, font=("Segoe UI", 11, "bold"), foreground="#b91c1c", background="#f7f9fc").pack(side=tk.LEFT, padx=(0, 20))
-        self._msg_lbl = ttk.Label(self, textvariable=self._msg_var, font=("Segoe UI", 10, "italic"), foreground="#1f2937", background="#f7f9fc", wraplength=520, justify=tk.RIGHT)
-        self._msg_lbl.pack(side=tk.RIGHT)
+        stats = ttk.Frame(self, style="Panel.TFrame")
+        stats.pack(fill=tk.X)
+        ttk.Label(stats, textvariable=self._moves_var, font=("Segoe UI", 10, "bold"), foreground="#1d4ed8", background="#f7f9fc").pack(side=tk.LEFT, padx=(0, 16))
+        ttk.Label(stats, textvariable=self._inc_var, font=("Segoe UI", 10, "bold"), foreground="#b91c1c", background="#f7f9fc").pack(side=tk.LEFT, padx=(0, 16))
+        ttk.Label(stats, text="Progress", font=("Segoe UI", 9, "bold"), foreground="#334155", background="#f7f9fc").pack(side=tk.LEFT, padx=(0, 6))
+        self._progress = ttk.Progressbar(stats, maximum=100, length=110, mode="determinate")
+        self._progress.pack(side=tk.LEFT, padx=(0, 6))
+        ttk.Label(stats, textvariable=self._progress_var, font=("Segoe UI", 9, "bold"), foreground="#15803d", background="#f7f9fc", width=4).pack(side=tk.LEFT)
+        self._msg_lbl = ttk.Label(self, textvariable=self._msg_var, font=("Segoe UI", 9), foreground="#1f2937", background="#f7f9fc", wraplength=900, justify=tk.LEFT)
+        self._msg_lbl.pack(fill=tk.X, pady=(4, 0))
 
-    def update_stats(self, moves: int, incorrect_count: int):
+    def update_stats(self, moves: int, incorrect_count: int, correct_count: int, total_tiles: int):
         self._moves_var.set(f"Moves Used: {moves}")
         self._inc_var.set(f"Tiles Incorrect: {incorrect_count}")
+        progress = round(correct_count / total_tiles * 100) if total_tiles else 0
+        self._progress.configure(value=progress)
+        self._progress_var.set(f"{progress}%")
 
     def set_message(self, message: str, color: str = "#374151"):
         self._msg_var.set(message)

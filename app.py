@@ -205,6 +205,7 @@ class PuzzleApp:
         style.map("Warning.TButton", background=[("active", "#d97706"), ("disabled", "#fcd34d")], foreground=[("disabled", "#78350f")])
 
         style.configure("Input.TCombobox", fieldbackground="#ffffff", background="#ffffff")
+        style.configure("Horizontal.TProgressbar", troughcolor="#e2e8f0", background="#16a34a", bordercolor="#e2e8f0", lightcolor="#16a34a", darkcolor="#16a34a")
 
     def _build_ui(self):
         self._ctrl = ControlPanel(self._root, self._load_image, self._grid_changed, self._use_hint, self._solve)
@@ -320,7 +321,6 @@ class PuzzleApp:
         self._ctrl.update_hint_button(self._hints_left, False)
         self._ctrl.set_solve_enabled(False)
         self._refresh()
-        self._status.update_stats(0, 0)
         self._status.set_message("Puzzle solved! Moves and score cleared. Load a new image to play again.", "#15803d")
 
     def _refresh(self):
@@ -332,7 +332,9 @@ class PuzzleApp:
         )
         self._orig_panel.display_image(orig)
         self._trans_panel.display_image(trans)
-        self._status.update_stats(self._moves, len(self._engine.get_incorrect_positions()))
+        incorrect = self._engine.get_incorrect_positions()
+        correct_count = gs * gs - len(incorrect)
+        self._status.update_stats(self._moves, len(incorrect), correct_count, gs * gs)
 
     def _check_win(self):
         if self._active and len(self._engine.get_incorrect_positions()) == 0:
