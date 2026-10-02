@@ -172,7 +172,7 @@ class PuzzleApp:
         self._root.resizable(False, False)
         self._root.geometry("980x700")
         self._root.minsize(960, 640)
-        self._root.configure(bg="#edf6ff")
+        self._root.configure(bg="#eef7ff")
         self._configure_theme()
 
         self._engine = BuiltInPuzzleEngine(display_max_size=450)
