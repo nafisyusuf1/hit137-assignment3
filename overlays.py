@@ -99,7 +99,7 @@ class HintOverlay(Overlay):
         x1, y1, x2, y2 = self.get_tile_bounds(out, grid_size, pos[0], pos[1])
         cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
         rad = int(min(x2 - x1, y2 - y1) * 0.35)
-        cv2.circle(out, (cx, cy), rad + 5, (255, 255, 255), self._thickness + 2, cv2.LINE_AA)
+        cv2.circle(out, (cx, cy), rad + 6, (255, 255, 255), self._thickness + 2, cv2.LINE_AA)
         cv2.circle(out, (cx, cy), rad, self._color, self._thickness, cv2.LINE_AA)
         cv2.circle(out, (cx, cy), max(10, rad // 4), (255, 255, 255), -1, cv2.LINE_AA)
         return out
