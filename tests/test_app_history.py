@@ -69,6 +69,33 @@ class PuzzleEngineHistoryTests(unittest.TestCase):
         confirm.assert_called_once()
         self.assertTrue(app._active)
 
+    def test_cancel_replacement_does_not_open_file_dialog(self) -> None:
+        app = PuzzleApp.__new__(PuzzleApp)
+        app._active = True
+        app._root = object()
+
+        with (
+            patch("app.messagebox.askyesno", return_value=False) as confirm,
+            patch("app.filedialog.askopenfilename") as open_file,
+        ):
+            app._load_image()
+
+        confirm.assert_called_once()
+        open_file.assert_not_called()
+        self.assertTrue(app._active)
+
+    def test_first_image_load_does_not_ask_replacement_confirmation(self) -> None:
+        app = PuzzleApp.__new__(PuzzleApp)
+        app._active = False
+
+        with (
+            patch("app.messagebox.askyesno") as confirm,
+            patch("app.filedialog.askopenfilename", return_value=""),
+        ):
+            app._load_image()
+
+        confirm.assert_not_called()
+
     def test_undo_and_redo_restore_swap_rotation_and_flip(self) -> None:
         engine = make_engine()
         initial_state = snapshot(engine)

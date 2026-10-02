@@ -368,6 +368,13 @@ class PuzzleApp:
         self._status.set_message(f"Grid size set to {size}x{size}. Click 'Load Image' to start.", "#334155")
 
     def _load_image(self):
+        if self._active and not messagebox.askyesno(
+            "Replace Current Puzzle",
+            "Loading a new image will replace the current puzzle and discard "
+            "its progress. Continue?",
+            parent=self._root,
+        ):
+            return
         path = filedialog.askopenfilename(
             title="Select Image",
             filetypes=[("Images", "*.jpg *.jpeg *.png *.bmp *.JPG *.JPEG *.PNG *.BMP"), ("All Files", "*.*")]

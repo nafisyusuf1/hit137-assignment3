@@ -17,6 +17,7 @@ This project implements a picture-puzzle game where tiles can be swapped, rotate
 - Hint system with a limit of three hints
 - Image loading validates the selected grid and reports missing or invalid image files
 - Selected images can be previewed with zoom and fit controls before starting; cancelling preserves the current round
+- Replacing an active puzzle requires confirmation before discarding progress
 - Solve/reset handling and solved-state lockout
 - Unit tests covering the board and game logic
 
