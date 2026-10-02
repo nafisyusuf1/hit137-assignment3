@@ -24,7 +24,17 @@ class BasePanel(ttk.Frame):
 
 class ControlPanel(BasePanel):
     """Toolbar with image, history, hint, and solve controls."""
-    def __init__(self, parent, on_load, on_grid_change, on_hint, on_solve, on_undo, on_redo):
+    def __init__(
+        self,
+        parent,
+        on_load,
+        on_grid_change,
+        on_hint,
+        on_solve,
+        on_undo,
+        on_redo,
+        on_restart,
+    ):
         super().__init__(parent, padding=(12, 10))
         self._on_load = on_load
         self._on_grid_change = on_grid_change
@@ -32,6 +42,7 @@ class ControlPanel(BasePanel):
         self._on_solve = on_solve
         self._on_undo = on_undo
         self._on_redo = on_redo
+        self._on_restart = on_restart
         self._grid_var = tk.StringVar(value="3x3")
         self._build_ui()
 
@@ -46,6 +57,15 @@ class ControlPanel(BasePanel):
         self._undo_btn.pack(side=tk.LEFT, padx=(0, 6))
         self._redo_btn = ttk.Button(self, text="Redo", command=self._on_redo, state=tk.DISABLED, style="Secondary.TButton")
         self._redo_btn.pack(side=tk.LEFT, padx=(0, 8))
+
+        self._restart_btn = ttk.Button(
+            self,
+            text="Restart",
+            command=self._on_restart,
+            state=tk.DISABLED,
+            style="Secondary.TButton",
+        )
+        self._restart_btn.pack(side=tk.LEFT, padx=(0, 8))
 
         self._hint_btn = ttk.Button(self, text="Hint (3 left)", command=self._on_hint, state=tk.DISABLED, style="Secondary.TButton")
         self._hint_btn.pack(side=tk.LEFT, padx=(0, 8))
@@ -69,6 +89,9 @@ class ControlPanel(BasePanel):
 
     def set_solve_enabled(self, enabled: bool):
         self._solve_btn.config(state=tk.NORMAL if enabled else tk.DISABLED)
+
+    def set_restart_enabled(self, enabled: bool):
+        self._restart_btn.config(state=tk.NORMAL if enabled else tk.DISABLED)
 
 
 class StatusPanel(BasePanel):

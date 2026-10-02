@@ -21,6 +21,9 @@ class FakeTile:
     def rotate_clockwise(self, quarter_turns: int = 1) -> None:
         self.rotation = (self.rotation + quarter_turns * 90) % 360
 
+    def rotate_cw(self, times: int = 1) -> None:
+        self.rotate_clockwise(times)
+
     def flip_horizontal(self) -> None:
         self.flipped_horizontal = not self.flipped_horizontal
 
@@ -41,6 +44,18 @@ class FakeTile:
 
 
 class TransformationGeneratorTests(unittest.TestCase):
+    @staticmethod
+    def make_engine():
+        from app import BuiltInPuzzleEngine
+
+        engine = BuiltInPuzzleEngine()
+        engine._grid_size = 3
+        engine._tiles = [
+            [FakeTile(row, col) for col in range(3)]
+            for row in range(3)
+        ]
+        return engine
+
     def test_count_scales_with_grid_and_each_tile_is_targeted_once(self) -> None:
         expected_counts = {3: 6, 4: 12, 5: 20}
 
@@ -70,21 +85,41 @@ class TransformationGeneratorTests(unittest.TestCase):
                     )
 
     def test_generated_transformations_can_be_applied_and_solved_by_engine(self) -> None:
-        from app import BuiltInPuzzleEngine
-
-        engine = BuiltInPuzzleEngine()
-        engine._grid_size = 3
-        engine._tiles = [
-            [FakeTile(row, col) for col in range(3)]
-            for row in range(3)
-        ]
-
+        engine = self.make_engine()
         engine._scramble_tiles()
 
         self.assertGreater(len(engine.get_incorrect_positions()), 0)
         self.assertFalse(engine.can_undo)
         engine.solve_all()
         self.assertEqual(engine.get_incorrect_positions(), [])
+
+    def test_restart_restores_same_scramble_and_clears_move_history(self) -> None:
+        engine = self.make_engine()
+        engine._scramble_tiles()
+        initial_scramble = tuple(
+            (tile.home_pos, tile.rotation, tile.flipped_horizontal, tile.flipped_vertical)
+            for row in engine._tiles
+            for tile in row
+        )
+
+        engine.swap_tiles((0, 0), (0, 1))
+        engine.rotate_tile(1, 1)
+        self.assertTrue(engine.can_undo)
+
+        self.assertTrue(engine.restart())
+        restarted_state = tuple(
+            (tile.home_pos, tile.rotation, tile.flipped_horizontal, tile.flipped_vertical)
+            for row in engine._tiles
+            for tile in row
+        )
+        self.assertEqual(restarted_state, initial_scramble)
+        self.assertFalse(engine.can_undo)
+        self.assertFalse(engine.can_redo)
+
+    def test_restart_without_a_loaded_scramble_returns_false(self) -> None:
+        engine = self.make_engine()
+
+        self.assertFalse(engine.restart())
 
 
 if __name__ == "__main__":

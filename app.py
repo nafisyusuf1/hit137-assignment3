@@ -94,6 +94,7 @@ class BuiltInPuzzleEngine:
         self._undo_stack = []
         self._redo_stack = []
         self._transformation_generator = TransformationGenerator()
+        self._scramble_transformations = []
 
     @property
     def original_image(self) -> np.ndarray:
@@ -140,9 +141,22 @@ class BuiltInPuzzleEngine:
         ]
 
     def _scramble_tiles(self):
-        for transformation in self._transformation_generator.generate(self._grid_size):
+        self._scramble_transformations = self._transformation_generator.generate(
+            self._grid_size
+        )
+        for transformation in self._scramble_transformations:
             transformation.apply(self)
         self.clear_history()
+
+    def restart(self) -> bool:
+        """Restore the original scramble for this image and clear player history."""
+        if not self._tiles or not self._scramble_transformations:
+            return False
+        self.solve_all()
+        for transformation in self._scramble_transformations:
+            transformation.apply(self)
+        self.clear_history()
+        return True
 
     def reassemble_image(self) -> np.ndarray:
         return np.vstack([
@@ -317,7 +331,7 @@ class PuzzleApp:
     def _build_ui(self):
         self._ctrl = ControlPanel(
             self._root, self._load_image, self._grid_changed, self._use_hint,
-            self._solve, self._undo, self._redo
+            self._solve, self._undo, self._redo, self._restart
         )
         self._ctrl.pack(fill=tk.X)
         ttk.Separator(self._root, orient=tk.HORIZONTAL, style="Horizontal.TSeparator").pack(fill=tk.X, padx=6)
@@ -367,6 +381,7 @@ class PuzzleApp:
         self._trans_panel.set_input_locked(False)
         self._ctrl.update_hint_button(self._hints_left, True)
         self._ctrl.set_solve_enabled(True)
+        self._ctrl.set_restart_enabled(True)
         self._update_history_buttons()
         self._status.set_message(f"Loaded {os.path.basename(path)} ({gsize}x{gsize}). Restore the picture!", "#1d4ed8")
         self._refresh()
@@ -474,6 +489,26 @@ class PuzzleApp:
             "Load a new image to play again.",
             "#15803d",
         )
+
+    def _restart(self):
+        if not self._engine.restart():
+            return
+        self._moves = 0
+        self._hints_left = self.MAX_HINTS
+        self._selected_pos = None
+        self._focused_pos = (0, 0)
+        self._clear_hint()
+        self._active = True
+        self._elapsed_seconds = 0.0
+        self._timer_started_at = time.monotonic()
+        self._status.set_elapsed_time(0)
+        self._trans_panel.set_input_locked(False)
+        self._ctrl.update_hint_button(self._hints_left, True)
+        self._ctrl.set_solve_enabled(True)
+        self._ctrl.set_restart_enabled(True)
+        self._update_history_buttons()
+        self._status.set_message("Puzzle restarted. Restore the picture!", "#1d4ed8")
+        self._refresh()
 
     def _undo(self):
         if not self._engine.undo():
