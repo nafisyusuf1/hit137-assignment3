@@ -171,6 +171,7 @@ class PuzzleApp:
         self._root.title("Puzzle Studio - Image Tile Match")
         self._root.resizable(False, False)
         self._root.geometry("980x700")
+        self._root.minsize(960, 640)
         self._root.configure(bg="#edf2ff")
         self._configure_theme()
 
