@@ -8,7 +8,7 @@ from unittest.mock import patch
 import numpy as np
 
 from app import BuiltInPuzzleEngine, PuzzleApp
-from panels import format_elapsed_time, make_image_preview
+from panels import clamp_preview_zoom, format_elapsed_time, make_image_preview
 
 
 class FakeTile:
@@ -52,6 +52,11 @@ class PuzzleEngineHistoryTests(unittest.TestCase):
         preview = make_image_preview(image, max_size=(480, 360))
 
         self.assertEqual(preview.size, (480, 240))
+
+    def test_preview_zoom_is_clamped_to_supported_limits(self) -> None:
+        self.assertEqual(clamp_preview_zoom(1.0, 0.25), 1.25)
+        self.assertEqual(clamp_preview_zoom(1.5, 0.25), 1.5)
+        self.assertEqual(clamp_preview_zoom(0.5, -0.25), 0.5)
 
     def test_cancel_solve_keeps_game_active(self) -> None:
         app = PuzzleApp.__new__(PuzzleApp)

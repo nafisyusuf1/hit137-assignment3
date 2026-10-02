@@ -24,8 +24,20 @@ def make_image_preview(image: np.ndarray, max_size: tuple[int, int] = (480, 360)
     return preview
 
 
+def clamp_preview_zoom(zoom: float, amount: float) -> float:
+    """Apply a preview zoom increment while keeping it within supported bounds."""
+    return min(
+        ImagePreviewDialog.MAX_ZOOM,
+        max(ImagePreviewDialog.MIN_ZOOM, zoom + amount),
+    )
+
+
 class ImagePreviewDialog:
     """Modal preview that lets the user start or cancel loading an image."""
+
+    MIN_ZOOM = 0.5
+    MAX_ZOOM = 1.5
+    ZOOM_STEP = 0.25
 
     def __init__(
         self,
@@ -39,7 +51,9 @@ class ImagePreviewDialog:
         self._window.transient(parent)
         self._window.resizable(False, False)
         self._accepted = False
-        self._photo = ImageTk.PhotoImage(make_image_preview(image), master=self._window)
+        self._preview_image = make_image_preview(image)
+        self._zoom = 1.0
+        self._photo = None
 
         content = ttk.Frame(self._window, padding=12)
         content.pack(fill=tk.BOTH, expand=True)
@@ -48,7 +62,37 @@ class ImagePreviewDialog:
             text=f"{Path(filepath).name}  |  {grid_size}x{grid_size} puzzle",
             style="Heading.TLabel",
         ).pack(pady=(0, 8))
-        ttk.Label(content, image=self._photo).pack()
+        self._image_label = ttk.Label(content)
+        self._image_label.pack()
+        self._render_preview()
+        zoom_controls = ttk.Frame(content, style="Panel.TFrame")
+        zoom_controls.pack(pady=(8, 0))
+        ttk.Button(
+            zoom_controls,
+            text="Zoom Out",
+            command=lambda: self._change_zoom(-self.ZOOM_STEP),
+            style="Secondary.TButton",
+        ).pack(side=tk.LEFT, padx=4)
+        self._zoom_label = ttk.Label(
+            zoom_controls,
+            text="100%",
+            style="Info.TLabel",
+            width=6,
+            anchor=tk.CENTER,
+        )
+        self._zoom_label.pack(side=tk.LEFT, padx=4)
+        ttk.Button(
+            zoom_controls,
+            text="Zoom In",
+            command=lambda: self._change_zoom(self.ZOOM_STEP),
+            style="Secondary.TButton",
+        ).pack(side=tk.LEFT, padx=4)
+        ttk.Button(
+            zoom_controls,
+            text="Fit",
+            command=self._fit_preview,
+            style="Secondary.TButton",
+        ).pack(side=tk.LEFT, padx=4)
         ttk.Label(
             content,
             text="Start this puzzle with the selected image?",
@@ -70,6 +114,25 @@ class ImagePreviewDialog:
             style="Primary.TButton",
         ).pack(side=tk.RIGHT)
         self._window.protocol("WM_DELETE_WINDOW", self._cancel)
+
+    def _change_zoom(self, amount: float) -> None:
+        self._zoom = clamp_preview_zoom(self._zoom, amount)
+        self._render_preview()
+
+    def _fit_preview(self) -> None:
+        self._zoom = 1.0
+        self._render_preview()
+
+    def _render_preview(self) -> None:
+        width = max(1, round(self._preview_image.width * self._zoom))
+        height = max(1, round(self._preview_image.height * self._zoom))
+        resized = self._preview_image.resize(
+            (width, height),
+            Image.Resampling.LANCZOS,
+        )
+        self._photo = ImageTk.PhotoImage(resized, master=self._window)
+        self._image_label.configure(image=self._photo)
+        self._zoom_label.configure(text=f"{round(self._zoom * 100)}%")
 
     def show(self) -> bool:
         self._window.grab_set()
