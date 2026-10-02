@@ -168,7 +168,7 @@ class PuzzleApp:
 
     def __init__(self, root: tk.Tk):
         self._root = root
-        self._root.title("Puzzle Studio")
+        self._root.title("Puzzle Studio - Image Tile Match")
         self._root.resizable(False, False)
         self._root.geometry("980x700")
         self._root.configure(bg="#edf2ff")
