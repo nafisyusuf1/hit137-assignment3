@@ -36,7 +36,7 @@ class ControlPanel(BasePanel):
         self._solve_btn = ttk.Button(self, text="Solve Puzzle", command=self._on_solve, state=tk.DISABLED, style="Warning.TButton")
         self._solve_btn.pack(side=tk.LEFT, padx=(0, 8))
 
-        legend = "Left-Click: Select/Swap | Right-Click: Rotate 90° | Shift+Left-Click: Flip Horizontal"
+        legend = "Left-click: Select/Swap | Right-click: Rotate 90° | Shift+Left-click: Flip Horizontal"
         ttk.Label(self, text=legend, style="Info.TLabel", wraplength=440, justify=tk.RIGHT).pack(side=tk.RIGHT)
 
     def get_grid_size(self) -> int:
