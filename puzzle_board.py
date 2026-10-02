@@ -125,6 +125,11 @@ class PuzzleBoard:
         return self.incorrect_count
 
     @property
+    def correct_tiles(self) -> int:
+        """Return how many tiles are already in the correct position and orientation."""
+        return len(self.__tiles) - self.incorrect_count
+
+    @property
     def incorrect_count(self) -> int:
         return sum(
             not self.is_position_correct(position)
