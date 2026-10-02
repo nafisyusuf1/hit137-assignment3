@@ -309,6 +309,8 @@ class PuzzleApp:
         self._build_ui()
         self._root.bind("<Control-z>", lambda _event: self._undo())
         self._root.bind("<Control-y>", lambda _event: self._redo())
+        self._root.bind("<Control-r>", lambda _event: self._keyboard_restart())
+        self._root.bind("<Control-R>", lambda _event: self._keyboard_restart())
         self._root.bind("<Up>", lambda _event: self._move_keyboard_focus(-1, 0))
         self._root.bind("<Down>", lambda _event: self._move_keyboard_focus(1, 0))
         self._root.bind("<Left>", lambda _event: self._move_keyboard_focus(0, -1))
@@ -495,6 +497,10 @@ class PuzzleApp:
     def _keyboard_flip(self):
         if self._active:
             self._shift_left_click(*self._focused_pos)
+        return "break"
+
+    def _keyboard_restart(self):
+        self._restart()
         return "break"
 
     def _use_hint(self):

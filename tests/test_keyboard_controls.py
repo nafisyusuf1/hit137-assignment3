@@ -1,8 +1,9 @@
 """Tests for keyboard navigation within the puzzle grid."""
 
 import unittest
+from unittest.mock import Mock
 
-from app import move_grid_focus
+from app import PuzzleApp, move_grid_focus
 
 
 class KeyboardControlTests(unittest.TestCase):
@@ -17,6 +18,15 @@ class KeyboardControlTests(unittest.TestCase):
         self.assertEqual(move_grid_focus((0, 0), 0, -1, 3), (0, 0))
         self.assertEqual(move_grid_focus((4, 4), 1, 0, 5), (4, 4))
         self.assertEqual(move_grid_focus((4, 4), 0, 1, 5), (4, 4))
+
+    def test_keyboard_restart_calls_existing_restart_handler(self) -> None:
+        app = PuzzleApp.__new__(PuzzleApp)
+        app._restart = Mock()
+
+        result = app._keyboard_restart()
+
+        app._restart.assert_called_once_with()
+        self.assertEqual(result, "break")
 
 
 if __name__ == "__main__":

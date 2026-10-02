@@ -11,7 +11,7 @@ This project implements a picture-puzzle game where tiles can be swapped, rotate
 - Elapsed puzzle timer with completion time
 - Persistent personal best completion times for 3x3, 4x4, and 5x5 puzzles
 - Undo and redo for tile moves (also available with Ctrl+Z and Ctrl+Y)
-- Restart the current puzzle with its original scramble
+- Restart the current puzzle with its original scramble (also available with Ctrl+R)
 - Solve Puzzle asks for confirmation before revealing the solution and clearing the move count
 - Keyboard gameplay: arrow keys move focus, Enter selects/swaps, R rotates, and F flips a tile
 - Hint system with a limit of three hints

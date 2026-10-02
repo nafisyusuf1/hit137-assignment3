@@ -205,7 +205,7 @@ class ControlPanel(BasePanel):
         self._solve_btn = ttk.Button(self, text="Solve Puzzle", command=self._on_solve, state=tk.DISABLED, style="Warning.TButton")
         self._solve_btn.pack(side=tk.LEFT, padx=(0, 8))
 
-        legend = "Arrows: Move | Enter: Select/Swap | R: Rotate | F: Flip | Ctrl+Z/Y: Undo/Redo"
+        legend = "Arrows: Move | Enter: Select/Swap | R: Rotate | F: Flip | Ctrl+R: Restart | Ctrl+Z/Y: Undo/Redo"
         ttk.Label(self, text=legend, style="Info.TLabel", wraplength=450, justify=tk.RIGHT).pack(side=tk.RIGHT)
 
     def set_history_enabled(self, can_undo: bool, can_redo: bool):
