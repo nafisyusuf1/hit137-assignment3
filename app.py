@@ -168,8 +168,9 @@ class PuzzleApp:
 
     def __init__(self, root: tk.Tk):
         self._root = root
-        self._root.title("HIT137 Assignment 3 - OpenCV Tile Puzzle")
+        self._root.title("Puzzle Studio")
         self._root.resizable(False, False)
+        self._root.geometry("980x700")
         self._root.configure(bg="#edf2ff")
         self._configure_theme()
 

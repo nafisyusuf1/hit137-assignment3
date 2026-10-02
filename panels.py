@@ -37,7 +37,7 @@ class ControlPanel(BasePanel):
         self._solve_btn.pack(side=tk.LEFT, padx=(0, 8))
 
         legend = "Left-Click: Select/Swap | Right-Click: Rotate 90° | Shift+Left-Click: Flip Horizontal"
-        ttk.Label(self, text=legend, style="Info.TLabel").pack(side=tk.RIGHT)
+        ttk.Label(self, text=legend, style="Info.TLabel", wraplength=420, justify=tk.RIGHT).pack(side=tk.RIGHT)
 
     def get_grid_size(self) -> int:
         return int(self._grid_var.get().split("x")[0])
@@ -64,7 +64,7 @@ class StatusPanel(BasePanel):
         left.pack(side=tk.LEFT)
         ttk.Label(left, textvariable=self._moves_var, font=("Segoe UI", 11, "bold"), foreground="#1d4ed8", background="#f7f9fc").pack(side=tk.LEFT, padx=(0, 20))
         ttk.Label(left, textvariable=self._inc_var, font=("Segoe UI", 11, "bold"), foreground="#b91c1c", background="#f7f9fc").pack(side=tk.LEFT, padx=(0, 20))
-        self._msg_lbl = ttk.Label(self, textvariable=self._msg_var, font=("Segoe UI", 10, "italic"), foreground="#374151", background="#f7f9fc")
+        self._msg_lbl = ttk.Label(self, textvariable=self._msg_var, font=("Segoe UI", 10, "italic"), foreground="#374151", background="#f7f9fc", wraplength=420, justify=tk.RIGHT)
         self._msg_lbl.pack(side=tk.RIGHT)
 
     def update_stats(self, moves: int, incorrect_count: int):
