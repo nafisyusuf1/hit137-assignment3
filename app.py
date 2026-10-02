@@ -14,6 +14,7 @@ from panels import (
     StatusPanel,
     ImagePanel,
     InteractiveImagePanel,
+    ImagePreviewDialog,
     format_elapsed_time,
 )
 
@@ -89,6 +90,7 @@ class BuiltInPuzzleEngine:
     def __init__(self, display_max_size: int = 450):
         self._max_size = display_max_size
         self._grid_size = 3
+        self._difficulty = "Normal"
         self._original_image = None
         self._tiles = []
         self._undo_stack = []
@@ -104,11 +106,16 @@ class BuiltInPuzzleEngine:
     def grid_size(self) -> int:
         return self._grid_size
 
+    @property
+    def difficulty(self) -> str:
+        return self._difficulty
+
     def load_and_prepare(
         self,
         filepath: str,
         grid_size: int,
         raw_image: np.ndarray | None = None,
+        difficulty: str = "Normal",
     ):
         if (
             isinstance(grid_size, bool)
@@ -116,6 +123,11 @@ class BuiltInPuzzleEngine:
             or grid_size not in (3, 4, 5)
         ):
             raise ValueError("Grid size must be 3, 4, or 5.")
+        if difficulty not in TransformationGenerator.DIFFICULTIES:
+            raise ValueError(
+                f"Difficulty must be one of: "
+                f"{', '.join(TransformationGenerator.DIFFICULTIES)}."
+            )
         if raw_image is None:
             raw = self.decode_image(filepath)
         else:
@@ -125,6 +137,7 @@ class BuiltInPuzzleEngine:
 
         prepared_image = self._resize_and_crop(raw, grid_size)
         self._grid_size = grid_size
+        self._difficulty = difficulty
         self._original_image = prepared_image
         self._slice_tiles()
         self._scramble_tiles()
@@ -157,7 +170,7 @@ class BuiltInPuzzleEngine:
 
     def _scramble_tiles(self):
         self._scramble_transformations = self._transformation_generator.generate(
-            self._grid_size
+            self._grid_size, self._difficulty
         )
         for transformation in self._scramble_transformations:
             transformation.apply(self)
@@ -367,7 +380,12 @@ class PuzzleApp:
         self._trans_panel.pack(side=tk.LEFT)
 
     def _grid_changed(self, size: int):
-        self._status.set_message(f"Grid size set to {size}x{size}. Click 'Load Image' to start.", "#334155")
+        difficulty = self._ctrl.get_difficulty()
+        prefix = "Next puzzle settings" if self._active else "Settings"
+        self._status.set_message(
+            f"{prefix}: {size}x{size}, {difficulty}. Load an image to start.",
+            "#334155",
+        )
 
     def _load_image(self):
         if self._active and not messagebox.askyesno(
@@ -384,15 +402,21 @@ class PuzzleApp:
         if not path:
             return
         gsize = self._ctrl.get_grid_size()
+        difficulty = self._ctrl.get_difficulty()
         try:
             raw_image = self._engine.decode_image(path)
-            if not self._confirm_image_preview(path, raw_image, gsize):
+            if not self._confirm_image_preview(path, raw_image, gsize, difficulty):
                 return
         except (OSError, ValueError, cv2.error) as e:
             messagebox.showerror("Image Preview Error", str(e))
             return
         try:
-            self._engine.load_and_prepare(path, gsize, raw_image=raw_image)
+            self._engine.load_and_prepare(
+                path,
+                gsize,
+                raw_image=raw_image,
+                difficulty=difficulty,
+            )
         except (OSError, ValueError, cv2.error) as e:
             messagebox.showerror("Image Load Error", str(e))
             return
@@ -414,17 +438,26 @@ class PuzzleApp:
         self._ctrl.set_solve_enabled(True)
         self._ctrl.set_restart_enabled(True)
         self._update_history_buttons()
-        self._status.set_message(f"Loaded {os.path.basename(path)} ({gsize}x{gsize}). Restore the picture!", "#1d4ed8")
+        self._status.set_message(
+            f"Loaded {os.path.basename(path)} ({gsize}x{gsize}, {difficulty}). "
+            "Restore the picture!",
+            "#1d4ed8",
+        )
         self._refresh()
 
     def _confirm_image_preview(
-        self, filepath: str, raw_image: np.ndarray, grid_size: int
+        self,
+        filepath: str,
+        raw_image: np.ndarray,
+        grid_size: int,
+        difficulty: str,
     ) -> bool:
         return ImagePreviewDialog(
             self._root,
             filepath,
             self._engine._resize_and_crop(raw_image, grid_size),
             grid_size,
+            difficulty,
         ).show()
 
     def _clear_hint(self):

@@ -128,22 +128,33 @@ class TransformationGenerator:
 
     Rules (from the assignment brief / rubric):
       * at least one Swap, one Rotate and one Flip every time
-      * number of transformations scales with grid size: n * (n - 1)
-        -> 6 for 3x3, 12 for 4x4, 20 for 5x5
+      * Normal uses n * (n - 1) transformations; Easy uses about half and
+        Hard uses n² - 1
       * no tile is targeted twice
     """
+
+    DIFFICULTIES = ("Easy", "Normal", "Hard")
 
     def __init__(self, rng=None):
         self.__rng = rng or random.Random()
 
-    @staticmethod
-    def count_for_grid(grid_size):
-        return grid_size * (grid_size - 1)
+    @classmethod
+    def count_for_grid(cls, grid_size, difficulty="Normal"):
+        if difficulty not in cls.DIFFICULTIES:
+            raise ValueError(
+                f"Difficulty must be one of: {', '.join(cls.DIFFICULTIES)}."
+            )
+        normal_count = grid_size * (grid_size - 1)
+        if difficulty == "Easy":
+            return max(3, (normal_count + 1) // 2)
+        if difficulty == "Hard":
+            return grid_size * grid_size - 1
+        return normal_count
 
-    def generate(self, grid_size):
+    def generate(self, grid_size, difficulty="Normal"):
         """Return a new random list of Transformation objects."""
         tile_count = grid_size * grid_size
-        count = self.count_for_grid(grid_size)
+        count = self.count_for_grid(grid_size, difficulty)
 
         # A swap uses 2 tiles, the others use 1. With `count` transformations
         # and no tile used twice, we can afford at most this many swaps:

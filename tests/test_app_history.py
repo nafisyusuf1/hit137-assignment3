@@ -46,6 +46,19 @@ def snapshot(engine: BuiltInPuzzleEngine) -> tuple:
 
 
 class PuzzleEngineHistoryTests(unittest.TestCase):
+    def test_load_rejects_unknown_difficulty_without_changing_state(self) -> None:
+        engine = BuiltInPuzzleEngine()
+
+        with self.assertRaisesRegex(ValueError, "Difficulty must be one of"):
+            engine.load_and_prepare(
+                "not-a-real-file.png",
+                3,
+                difficulty="Extreme",
+            )
+
+        self.assertEqual(engine.difficulty, "Normal")
+        self.assertIsNone(engine.original_image)
+
     def test_image_preview_scales_proportionally_within_bounds(self) -> None:
         image = np.zeros((500, 1000, 3), dtype=np.uint8)
 

@@ -5,6 +5,7 @@ This project implements a picture-puzzle game where tiles can be swapped, rotate
 ## Features
 
 - 3x3, 4x4, and 5x5 puzzle boards
+- Easy, Normal, and Hard difficulty settings with progressively stronger scrambles
 - Tile swapping with move tracking
 - Rotation and flipping actions
 - Grid-scaled random scrambling with swaps, rotations, and flips; each tile is targeted at most once

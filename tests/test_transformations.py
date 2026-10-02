@@ -84,6 +84,35 @@ class TransformationGeneratorTests(unittest.TestCase):
                         },
                     )
 
+    def test_difficulty_scales_scramble_strength_for_every_grid(self) -> None:
+        expected_counts = {
+            3: {"Easy": 3, "Normal": 6, "Hard": 8},
+            4: {"Easy": 6, "Normal": 12, "Hard": 15},
+            5: {"Easy": 10, "Normal": 20, "Hard": 24},
+        }
+        for grid_size, counts in expected_counts.items():
+            for difficulty, expected_count in counts.items():
+                for seed in range(10):
+                    with self.subTest(
+                        grid_size=grid_size,
+                        difficulty=difficulty,
+                        seed=seed,
+                    ):
+                        transformations = TransformationGenerator(
+                            random.Random(seed)
+                        ).generate(grid_size, difficulty)
+                        positions = [
+                            position
+                            for transformation in transformations
+                            for position in transformation.positions
+                        ]
+                        self.assertEqual(len(transformations), expected_count)
+                        self.assertEqual(len(positions), len(set(positions)))
+
+    def test_generator_rejects_unknown_difficulty(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Difficulty must be one of"):
+            TransformationGenerator().generate(3, "Extreme")
+
     def test_generated_transformations_can_be_applied_and_solved_by_engine(self) -> None:
         engine = self.make_engine()
         engine._scramble_tiles()

@@ -45,6 +45,7 @@ class ImagePreviewDialog:
         filepath: str,
         image: np.ndarray,
         grid_size: int,
+        difficulty: str = "Normal",
     ) -> None:
         self._window = tk.Toplevel(parent)
         self._window.title("Preview Puzzle Image")
@@ -59,7 +60,10 @@ class ImagePreviewDialog:
         content.pack(fill=tk.BOTH, expand=True)
         ttk.Label(
             content,
-            text=f"{Path(filepath).name}  |  {grid_size}x{grid_size} puzzle",
+            text=(
+                f"{Path(filepath).name}  |  "
+                f"{grid_size}x{grid_size} {difficulty} puzzle"
+            ),
             style="Heading.TLabel",
         ).pack(pady=(0, 8))
         self._image_label = ttk.Label(content)
@@ -176,14 +180,38 @@ class ControlPanel(BasePanel):
         self._on_redo = on_redo
         self._on_restart = on_restart
         self._grid_var = tk.StringVar(value="3x3")
+        self._difficulty_var = tk.StringVar(value="Normal")
         self._build_ui()
 
     def _build_ui(self):
+        legend = (
+            "Arrows: Move | Enter: Select/Swap | R: Rotate | F: Flip | "
+            "Ctrl+R: Restart | Ctrl+Z/Y: Undo/Redo"
+        )
+        ttk.Label(
+            self,
+            text=legend,
+            style="Info.TLabel",
+            wraplength=940,
+            justify=tk.RIGHT,
+        ).pack(side=tk.BOTTOM, fill=tk.X, pady=(6, 0))
+
         ttk.Button(self, text="Load Image", command=self._on_load, style="Primary.TButton").pack(side=tk.LEFT, padx=(0, 12))
         ttk.Label(self, text="Grid Size:", style="FieldLabel.TLabel").pack(side=tk.LEFT, padx=(0, 6))
         self._combo = ttk.Combobox(self, textvariable=self._grid_var, values=["3x3", "4x4", "5x5"], state="readonly", width=6, style="Input.TCombobox")
         self._combo.pack(side=tk.LEFT, padx=(0, 16))
-        self._combo.bind("<<ComboboxSelected>>", lambda _e: self._on_grid_change(self.get_grid_size()))
+        self._combo.bind("<<ComboboxSelected>>", self._settings_changed)
+        ttk.Label(self, text="Difficulty:", style="FieldLabel.TLabel").pack(side=tk.LEFT, padx=(0, 6))
+        self._difficulty_combo = ttk.Combobox(
+            self,
+            textvariable=self._difficulty_var,
+            values=["Easy", "Normal", "Hard"],
+            state="readonly",
+            width=8,
+            style="Input.TCombobox",
+        )
+        self._difficulty_combo.pack(side=tk.LEFT, padx=(0, 12))
+        self._difficulty_combo.bind("<<ComboboxSelected>>", self._settings_changed)
 
         self._undo_btn = ttk.Button(self, text="Undo", command=self._on_undo, state=tk.DISABLED, style="Secondary.TButton")
         self._undo_btn.pack(side=tk.LEFT, padx=(0, 6))
@@ -205,15 +233,18 @@ class ControlPanel(BasePanel):
         self._solve_btn = ttk.Button(self, text="Solve Puzzle", command=self._on_solve, state=tk.DISABLED, style="Warning.TButton")
         self._solve_btn.pack(side=tk.LEFT, padx=(0, 8))
 
-        legend = "Arrows: Move | Enter: Select/Swap | R: Rotate | F: Flip | Ctrl+R: Restart | Ctrl+Z/Y: Undo/Redo"
-        ttk.Label(self, text=legend, style="Info.TLabel", wraplength=450, justify=tk.RIGHT).pack(side=tk.RIGHT)
-
     def set_history_enabled(self, can_undo: bool, can_redo: bool):
         self._undo_btn.config(state=tk.NORMAL if can_undo else tk.DISABLED)
         self._redo_btn.config(state=tk.NORMAL if can_redo else tk.DISABLED)
 
     def get_grid_size(self) -> int:
         return int(self._grid_var.get().split("x")[0])
+
+    def get_difficulty(self) -> str:
+        return self._difficulty_var.get()
+
+    def _settings_changed(self, _event=None):
+        self._on_grid_change(self.get_grid_size())
 
     def update_hint_button(self, hints_remaining: int, enabled: bool = True):
         self._hint_btn.config(text=f"Hint ({hints_remaining} left)")
