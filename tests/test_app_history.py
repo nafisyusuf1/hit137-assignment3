@@ -5,8 +5,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import numpy as np
+
 from app import BuiltInPuzzleEngine, PuzzleApp
-from panels import format_elapsed_time
+from panels import format_elapsed_time, make_image_preview
 
 
 class FakeTile:
@@ -44,6 +46,13 @@ def snapshot(engine: BuiltInPuzzleEngine) -> tuple:
 
 
 class PuzzleEngineHistoryTests(unittest.TestCase):
+    def test_image_preview_scales_proportionally_within_bounds(self) -> None:
+        image = np.zeros((500, 1000, 3), dtype=np.uint8)
+
+        preview = make_image_preview(image, max_size=(480, 360))
+
+        self.assertEqual(preview.size, (480, 240))
+
     def test_cancel_solve_keeps_game_active(self) -> None:
         app = PuzzleApp.__new__(PuzzleApp)
         app._active = True

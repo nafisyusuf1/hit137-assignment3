@@ -1,4 +1,5 @@
 ﻿import tkinter as tk
+from pathlib import Path
 from tkinter import ttk
 import cv2
 import numpy as np
@@ -13,6 +14,74 @@ def format_elapsed_time(seconds: float) -> str:
     if hours:
         return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
     return f"{minutes:02d}:{seconds:02d}"
+
+
+def make_image_preview(image: np.ndarray, max_size: tuple[int, int] = (480, 360)) -> Image.Image:
+    """Convert a BGR image into a proportionally scaled PIL preview."""
+    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    preview = Image.fromarray(rgb)
+    preview.thumbnail(max_size, Image.Resampling.LANCZOS)
+    return preview
+
+
+class ImagePreviewDialog:
+    """Modal preview that lets the user start or cancel loading an image."""
+
+    def __init__(
+        self,
+        parent: tk.Misc,
+        filepath: str,
+        image: np.ndarray,
+        grid_size: int,
+    ) -> None:
+        self._window = tk.Toplevel(parent)
+        self._window.title("Preview Puzzle Image")
+        self._window.transient(parent)
+        self._window.resizable(False, False)
+        self._accepted = False
+        self._photo = ImageTk.PhotoImage(make_image_preview(image), master=self._window)
+
+        content = ttk.Frame(self._window, padding=12)
+        content.pack(fill=tk.BOTH, expand=True)
+        ttk.Label(
+            content,
+            text=f"{Path(filepath).name}  |  {grid_size}x{grid_size} puzzle",
+            style="Heading.TLabel",
+        ).pack(pady=(0, 8))
+        ttk.Label(content, image=self._photo).pack()
+        ttk.Label(
+            content,
+            text="Start this puzzle with the selected image?",
+            style="Info.TLabel",
+        ).pack(pady=(8, 10))
+
+        buttons = ttk.Frame(content, style="Panel.TFrame")
+        buttons.pack(fill=tk.X)
+        ttk.Button(
+            buttons,
+            text="Cancel",
+            command=self._cancel,
+            style="Secondary.TButton",
+        ).pack(side=tk.RIGHT, padx=(8, 0))
+        ttk.Button(
+            buttons,
+            text="Start Puzzle",
+            command=self._accept,
+            style="Primary.TButton",
+        ).pack(side=tk.RIGHT)
+        self._window.protocol("WM_DELETE_WINDOW", self._cancel)
+
+    def show(self) -> bool:
+        self._window.grab_set()
+        self._window.wait_window()
+        return self._accepted
+
+    def _accept(self) -> None:
+        self._accepted = True
+        self._window.destroy()
+
+    def _cancel(self) -> None:
+        self._window.destroy()
 
 
 class BasePanel(ttk.Frame):

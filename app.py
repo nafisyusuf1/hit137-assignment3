@@ -104,16 +104,22 @@ class BuiltInPuzzleEngine:
     def grid_size(self) -> int:
         return self._grid_size
 
-    def load_and_prepare(self, filepath: str, grid_size: int):
+    def load_and_prepare(
+        self,
+        filepath: str,
+        grid_size: int,
+        raw_image: np.ndarray | None = None,
+    ):
         if (
             isinstance(grid_size, bool)
             or not isinstance(grid_size, int)
             or grid_size not in (3, 4, 5)
         ):
             raise ValueError("Grid size must be 3, 4, or 5.")
-        if not os.path.isfile(filepath):
-            raise FileNotFoundError(f"Image file not found: {filepath}")
-        raw = cv2.imdecode(np.fromfile(filepath, dtype=np.uint8), cv2.IMREAD_COLOR)
+        if raw_image is None:
+            raw = self.decode_image(filepath)
+        else:
+            raw = raw_image
         if raw is None or raw.size == 0:
             raise ValueError("Invalid image file. Please choose a valid JPG, PNG, or BMP file.")
 
@@ -122,6 +128,15 @@ class BuiltInPuzzleEngine:
         self._original_image = prepared_image
         self._slice_tiles()
         self._scramble_tiles()
+
+    @staticmethod
+    def decode_image(filepath: str) -> np.ndarray:
+        if not os.path.isfile(filepath):
+            raise FileNotFoundError(f"Image file not found: {filepath}")
+        raw = cv2.imdecode(np.fromfile(filepath, dtype=np.uint8), cv2.IMREAD_COLOR)
+        if raw is None or raw.size == 0:
+            raise ValueError("Invalid image file. Please choose a valid JPG, PNG, or BMP file.")
+        return raw
 
     def _resize_and_crop(self, img: np.ndarray, grid_size: int) -> np.ndarray:
         h, w = img.shape[:2]
@@ -361,7 +376,14 @@ class PuzzleApp:
             return
         gsize = self._ctrl.get_grid_size()
         try:
-            self._engine.load_and_prepare(path, gsize)
+            raw_image = self._engine.decode_image(path)
+            if not self._confirm_image_preview(path, raw_image, gsize):
+                return
+        except (OSError, ValueError, cv2.error) as e:
+            messagebox.showerror("Image Preview Error", str(e))
+            return
+        try:
+            self._engine.load_and_prepare(path, gsize, raw_image=raw_image)
         except (OSError, ValueError, cv2.error) as e:
             messagebox.showerror("Image Load Error", str(e))
             return
@@ -385,6 +407,16 @@ class PuzzleApp:
         self._update_history_buttons()
         self._status.set_message(f"Loaded {os.path.basename(path)} ({gsize}x{gsize}). Restore the picture!", "#1d4ed8")
         self._refresh()
+
+    def _confirm_image_preview(
+        self, filepath: str, raw_image: np.ndarray, grid_size: int
+    ) -> bool:
+        return ImagePreviewDialog(
+            self._root,
+            filepath,
+            self._engine._resize_and_crop(raw_image, grid_size),
+            grid_size,
+        ).show()
 
     def _clear_hint(self):
         self._hint_curr = None

@@ -16,6 +16,7 @@ This project implements a picture-puzzle game where tiles can be swapped, rotate
 - Keyboard gameplay: arrow keys move focus, Enter selects/swaps, R rotates, and F flips a tile
 - Hint system with a limit of three hints
 - Image loading validates the selected grid and reports missing or invalid image files
+- Selected images are previewed before starting; cancelling preserves the current round
 - Solve/reset handling and solved-state lockout
 - Unit tests covering the board and game logic
 
