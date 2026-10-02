@@ -57,6 +57,27 @@ class PuzzleBoard:
     def __contains__(self, item: Any) -> bool:
         return item in self.__tiles
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, PuzzleBoard):
+            return NotImplemented
+        return (
+            self.__grid_size == other.__grid_size
+            and self.__tiles == other.__tiles
+            and self.__moves == other.__moves
+            and self.__hints_used == other.__hints_used
+            and self.__hint == other.__hint
+            and self.__solved == other.__solved
+        )
+
+    def clone(self) -> "PuzzleBoard":
+        """Return a new board with the same tile layout and counters."""
+        cloned = PuzzleBoard(list(self.__tiles), self.__grid_size, rng=self.__rng)
+        cloned.__moves = self.__moves
+        cloned.__hints_used = self.__hints_used
+        cloned.__hint = self.__hint
+        cloned.__solved = self.__solved
+        return cloned
+
     def __repr__(self) -> str:
         return (
             f"PuzzleBoard(grid_size={self.__grid_size}, moves={self.__moves}, "

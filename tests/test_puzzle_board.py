@@ -122,6 +122,19 @@ class PuzzleBoardTests(unittest.TestCase):
         self.assertEqual(board[0], board.tile_at(0))
         self.assertIn(board.tile_at(0), board)
 
+    def test_board_can_clone_and_compare_state(self) -> None:
+        board = scrambled_board()
+        clone = board.clone()
+
+        self.assertIsNot(board, clone)
+        self.assertEqual(board, clone)
+        self.assertEqual(clone.tiles, board.tiles)
+
+        clone.rotate_at(0)
+        self.assertNotEqual(board, clone)
+        self.assertEqual(board.moves, 0)
+        self.assertEqual(clone.moves, 1)
+
     def test_solve_restores_everything_and_clears_moves(self) -> None:
         board = scrambled_board()
         board.rotate_at(2)
