@@ -6,6 +6,7 @@ from tkinter import filedialog, messagebox, ttk
 import cv2
 import numpy as np
 
+from best_times import BestTimes
 from overlays import OverlayRenderer
 from panels import (
     ControlPanel,
@@ -248,6 +249,7 @@ class PuzzleApp:
 
         self._engine = BuiltInPuzzleEngine(display_max_size=450)
         self._renderer = OverlayRenderer()
+        self._best_times = BestTimes()
         self._moves = 0
         self._hints_left = self.MAX_HINTS
         self._selected_pos = None
@@ -330,6 +332,7 @@ class PuzzleApp:
         self._elapsed_seconds = 0.0
         self._timer_started_at = time.monotonic()
         self._status.set_elapsed_time(0)
+        self._refresh_best_time(gsize)
         self._trans_panel.set_grid_size(gsize)
         self._trans_panel.set_input_locked(False)
         self._ctrl.update_hint_button(self._hints_left, True)
@@ -485,15 +488,35 @@ class PuzzleApp:
             self._ctrl.update_hint_button(self._hints_left, False)
             self._ctrl.set_solve_enabled(False)
             self._refresh()
+            new_record = False
+            try:
+                new_record, best_time = self._best_times.record(
+                    self._engine.grid_size, elapsed
+                )
+                self._status.set_best_time(self._engine.grid_size, best_time)
+            except (OSError, ValueError) as error:
+                messagebox.showerror("Best Time Error", str(error))
             elapsed_text = format_elapsed_time(elapsed)
+            record_text = " New personal best!" if new_record else ""
             self._status.set_message(
-                f"Congratulations! Completed in {self._moves} moves and {elapsed_text}!",
+                f"Congratulations! Completed in {self._moves} moves and "
+                f"{elapsed_text}!{record_text}",
                 "#15803d",
             )
             messagebox.showinfo(
                 "Puzzle Complete!",
-                f"You restored the image in {self._moves} moves and {elapsed_text}!",
+                f"You restored the image in {self._moves} moves and "
+                f"{elapsed_text}!{record_text}",
             )
+
+    def _refresh_best_time(self, grid_size: int):
+        try:
+            best_time = self._best_times.best_for(grid_size)
+        except (OSError, ValueError) as error:
+            self._status.set_best_time(grid_size, None)
+            messagebox.showerror("Best Time Error", str(error))
+            return
+        self._status.set_best_time(grid_size, best_time)
 
 
 if __name__ == "__main__":

@@ -79,6 +79,7 @@ class StatusPanel(BasePanel):
         self._inc_var = tk.StringVar(value="Tiles Incorrect: 0")
         self._progress_var = tk.StringVar(value="0%")
         self._time_var = tk.StringVar(value="Time: 00:00")
+        self._best_time_var = tk.StringVar(value="Best: --")
         self._msg_var = tk.StringVar(value="Choose grid size and click 'Load Image' to start.")
         self._build_ui()
 
@@ -92,6 +93,7 @@ class StatusPanel(BasePanel):
         self._progress.pack(side=tk.LEFT, padx=(0, 6))
         ttk.Label(stats, textvariable=self._progress_var, font=("Segoe UI", 9, "bold"), foreground="#15803d", background="#f7f9fc", width=4).pack(side=tk.LEFT)
         ttk.Label(stats, textvariable=self._time_var, font=("Segoe UI", 10, "bold"), foreground="#334155", background="#f7f9fc").pack(side=tk.LEFT, padx=(16, 0))
+        ttk.Label(stats, textvariable=self._best_time_var, font=("Segoe UI", 10, "bold"), foreground="#7c3aed", background="#f7f9fc").pack(side=tk.LEFT, padx=(12, 0))
         self._msg_lbl = ttk.Label(self, textvariable=self._msg_var, font=("Segoe UI", 9), foreground="#1f2937", background="#f7f9fc", wraplength=900, justify=tk.LEFT)
         self._msg_lbl.pack(fill=tk.X, pady=(4, 0))
 
@@ -104,6 +106,10 @@ class StatusPanel(BasePanel):
 
     def set_elapsed_time(self, seconds: float):
         self._time_var.set(f"Time: {format_elapsed_time(seconds)}")
+
+    def set_best_time(self, grid_size: int, seconds: float | None):
+        value = format_elapsed_time(seconds) if seconds is not None else "--"
+        self._best_time_var.set(f"Best {grid_size}x{grid_size}: {value}")
 
     def set_message(self, message: str, color: str = "#374151"):
         self._msg_var.set(message)
