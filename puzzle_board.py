@@ -130,6 +130,13 @@ class PuzzleBoard:
         return len(self.__tiles) - self.incorrect_count
 
     @property
+    def progress_percent(self) -> int:
+        """Return the completion percentage as a whole number from 0 to 100."""
+        if not self.__tiles:
+            return 0
+        return int((self.correct_tiles / len(self.__tiles)) * 100)
+
+    @property
     def incorrect_count(self) -> int:
         return sum(
             not self.is_position_correct(position)
