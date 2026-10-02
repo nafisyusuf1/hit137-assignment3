@@ -36,6 +36,14 @@ class PuzzleGame:
         """Return True while the board is showing an active hint."""
         return self.__board.hint is not None
 
+    def can_select(self, position: int) -> bool:
+        """Return whether a tile index is valid for selection in the current game state."""
+        try:
+            self.__can_use(position)
+            return True
+        except (TypeError, ValueError, IndexError):
+            return False
+
     def left_click(self, position: int) -> str:
         """Select, deselect, or swap according to a left-click.
 
