@@ -135,6 +135,25 @@ class PuzzleBoardTests(unittest.TestCase):
         self.assertEqual(board.moves, 0)
         self.assertEqual(clone.moves, 1)
 
+    def test_reset_can_restore_default_state_without_mutating_original(self) -> None:
+        board = scrambled_board()
+        board.rotate_at(0)
+        board.use_hint()
+
+        fresh = board.clone()
+        fresh.reset()
+
+        self.assertEqual(fresh.moves, 0)
+        self.assertEqual(fresh.hints_used, 0)
+        self.assertIsNone(fresh.hint)
+        self.assertEqual(fresh.tiles, tuple(tile for tile in board.tiles))
+
+    def test_board_exposes_completion_state(self) -> None:
+        board = scrambled_board()
+        self.assertFalse(board.is_complete)
+        board.solve()
+        self.assertTrue(board.is_complete)
+
     def test_solve_restores_everything_and_clears_moves(self) -> None:
         board = scrambled_board()
         board.rotate_at(2)
