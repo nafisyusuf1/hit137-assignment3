@@ -98,10 +98,10 @@ class PuzzleGame:
         }
 
     def __can_use(self, position: int) -> bool:
-        if self.locked:
-            return False
         if isinstance(position, bool):
             raise TypeError("Tile position must be an integer.")
+        if self.locked:
+            return False
         # tile_at performs consistent type/range validation.
         self.__board.tile_at(position)
         return True
