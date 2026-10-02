@@ -1,5 +1,7 @@
 """Unit tests for the picture-puzzle engine's move history."""
 
+import os
+import tempfile
 import unittest
 
 from app import BuiltInPuzzleEngine
@@ -84,6 +86,30 @@ class PuzzleEngineHistoryTests(unittest.TestCase):
 
         self.assertFalse(engine.can_undo)
         self.assertFalse(engine.can_redo)
+
+    def test_load_rejects_unsupported_grid_before_reading_file(self) -> None:
+        engine = BuiltInPuzzleEngine()
+
+        with self.assertRaisesRegex(ValueError, "Grid size must be 3, 4, or 5"):
+            engine.load_and_prepare("not-a-real-file.png", 2)
+
+        self.assertEqual(engine.grid_size, 3)
+        self.assertIsNone(engine.original_image)
+
+    def test_load_reports_invalid_image_and_preserves_engine_state(self) -> None:
+        engine = BuiltInPuzzleEngine()
+        with tempfile.NamedTemporaryFile(delete=False) as image_file:
+            image_file.write(b"not an image")
+            filepath = image_file.name
+
+        try:
+            with self.assertRaisesRegex(ValueError, "Invalid image file"):
+                engine.load_and_prepare(filepath, 3)
+        finally:
+            os.unlink(filepath)
+
+        self.assertEqual(engine.grid_size, 3)
+        self.assertIsNone(engine.original_image)
 
 
 if __name__ == "__main__":

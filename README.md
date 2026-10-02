@@ -9,6 +9,7 @@ This project implements a picture-puzzle game where tiles can be swapped, rotate
 - Rotation and flipping actions
 - Undo and redo for tile moves (also available with Ctrl+Z and Ctrl+Y)
 - Hint system with a limit of three hints
+- Image loading validates the selected grid and reports missing or invalid image files
 - Solve/reset handling and solved-state lockout
 - Unit tests covering the board and game logic
 

@@ -74,14 +74,21 @@ class BuiltInPuzzleEngine:
         return self._grid_size
 
     def load_and_prepare(self, filepath: str, grid_size: int):
+        if (
+            isinstance(grid_size, bool)
+            or not isinstance(grid_size, int)
+            or grid_size not in (3, 4, 5)
+        ):
+            raise ValueError("Grid size must be 3, 4, or 5.")
         if not os.path.isfile(filepath):
-            raise FileNotFoundError("File not found.")
+            raise FileNotFoundError(f"Image file not found: {filepath}")
         raw = cv2.imdecode(np.fromfile(filepath, dtype=np.uint8), cv2.IMREAD_COLOR)
-        if raw is None:
+        if raw is None or raw.size == 0:
             raise ValueError("Invalid image file. Please choose a valid JPG, PNG, or BMP file.")
 
+        prepared_image = self._resize_and_crop(raw, grid_size)
         self._grid_size = grid_size
-        self._original_image = self._resize_and_crop(raw, grid_size)
+        self._original_image = prepared_image
         self._slice_tiles()
         self._scramble_tiles()
 
@@ -300,7 +307,7 @@ class PuzzleApp:
         gsize = self._ctrl.get_grid_size()
         try:
             self._engine.load_and_prepare(path, gsize)
-        except Exception as e:
+        except (OSError, ValueError, cv2.error) as e:
             messagebox.showerror("Image Load Error", str(e))
             return
 
