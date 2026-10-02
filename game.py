@@ -44,6 +44,10 @@ class PuzzleGame:
         except (TypeError, ValueError, IndexError):
             return False
 
+    def can_move(self) -> bool:
+        """Return True when the game is still accepting player moves."""
+        return not self.locked
+
     def left_click(self, position: int) -> str:
         """Select, deselect, or swap according to a left-click.
 

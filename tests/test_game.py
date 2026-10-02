@@ -134,6 +134,12 @@ class PuzzleGameTests(unittest.TestCase):
         self.assertFalse(game.can_select(-1))
         self.assertFalse(game.can_select(99))
 
+    def test_game_can_report_if_moves_are_available(self) -> None:
+        game = make_game()
+        self.assertTrue(game.can_move())
+        game.solve()
+        self.assertFalse(game.can_move())
+
 
 if __name__ == "__main__":
     unittest.main()
