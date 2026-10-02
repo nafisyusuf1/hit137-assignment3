@@ -8,6 +8,7 @@ import numpy as np
 
 from best_times import BestTimes
 from overlays import OverlayRenderer
+from transformations import TransformationGenerator
 from panels import (
     ControlPanel,
     StatusPanel,
@@ -37,8 +38,14 @@ class Tile:
             else:
                 self._rotation = (self._rotation + 90) % 360
 
+    def rotate_clockwise(self, quarter_turns: int = 1):
+        self.rotate_cw(quarter_turns)
+
     def flip_horizontal(self):
         self._flipped_h = not self._flipped_h
+
+    def flip_vertical(self):
+        self._flipped_v = not self._flipped_v
 
     def reset_orientation(self):
         self._rotation = 0
@@ -72,6 +79,7 @@ class BuiltInPuzzleEngine:
         self._tiles = []
         self._undo_stack = []
         self._redo_stack = []
+        self._transformation_generator = TransformationGenerator()
 
     @property
     def original_image(self) -> np.ndarray:
@@ -118,21 +126,8 @@ class BuiltInPuzzleEngine:
         ]
 
     def _scramble_tiles(self):
-        untouched = [(r, c) for r in range(self._grid_size) for c in range(self._grid_size)]
-        random.shuffle(untouched)
-        while len(untouched) >= 2:
-            action = random.choice(["swap", "rotate", "flip"])
-            if action == "swap" and len(untouched) >= 2:
-                self.swap_tiles(untouched.pop(), untouched.pop())
-            else:
-                r, c = untouched.pop()
-                if action == "rotate":
-                    self._tiles[r][c].rotate_cw(random.choice([1, 2, 3]))
-                else:
-                    self._tiles[r][c].flip_horizontal()
-        if untouched:
-            r, c = untouched.pop()
-            self._tiles[r][c].rotate_cw(random.choice([1, 2, 3]))
+        for transformation in self._transformation_generator.generate(self._grid_size):
+            transformation.apply(self)
         self.clear_history()
 
     def reassemble_image(self) -> np.ndarray:
@@ -151,6 +146,15 @@ class BuiltInPuzzleEngine:
         r1, c1 = p1
         r2, c2 = p2
         self._tiles[r1][c1], self._tiles[r2][c2] = self._tiles[r2][c2], self._tiles[r1][c1]
+
+    def swap_positions(self, first: int, second: int):
+        first_row, first_col = divmod(first, self._grid_size)
+        second_row, second_col = divmod(second, self._grid_size)
+        self._swap_tiles((first_row, first_col), (second_row, second_col))
+
+    def tile_at(self, position: int):
+        row, col = divmod(position, self._grid_size)
+        return self._tiles[row][col]
 
     def rotate_tile(self, r: int, c: int):
         self._tiles[r][c].rotate_cw(1)

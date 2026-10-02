@@ -7,6 +7,7 @@ This project implements a picture-puzzle game where tiles can be swapped, rotate
 - 3x3, 4x4, and 5x5 puzzle boards
 - Tile swapping with move tracking
 - Rotation and flipping actions
+- Grid-scaled random scrambling with swaps, rotations, and flips; each tile is targeted at most once
 - Elapsed puzzle timer with completion time
 - Persistent personal best completion times for 3x3, 4x4, and 5x5 puzzles
 - Undo and redo for tile moves (also available with Ctrl+Z and Ctrl+Y)
