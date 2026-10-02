@@ -31,6 +31,11 @@ class PuzzleGame:
     def locked(self) -> bool:
         return self.__board.solved
 
+    @property
+    def has_hint(self) -> bool:
+        """Return True while the board is showing an active hint."""
+        return self.__board.hint is not None
+
     def left_click(self, position: int) -> str:
         """Select, deselect, or swap according to a left-click.
 
