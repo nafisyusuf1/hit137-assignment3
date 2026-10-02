@@ -68,7 +68,6 @@ class ImagePreviewDialog:
         ).pack(pady=(0, 8))
         self._image_label = ttk.Label(content)
         self._image_label.pack()
-        self._render_preview()
         zoom_controls = ttk.Frame(content, style="Panel.TFrame")
         zoom_controls.pack(pady=(8, 0))
         ttk.Button(
@@ -97,6 +96,9 @@ class ImagePreviewDialog:
             command=self._fit_preview,
             style="Secondary.TButton",
         ).pack(side=tk.LEFT, padx=4)
+        # Draw the picture only after the zoom label exists, because
+        # _render_preview() also updates that label.
+        self._render_preview()
         ttk.Label(
             content,
             text="Start this puzzle with the selected image?",

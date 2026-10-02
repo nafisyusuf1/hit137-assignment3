@@ -11,37 +11,18 @@ from app import BuiltInPuzzleEngine, PuzzleApp
 from panels import clamp_preview_zoom, format_elapsed_time, make_image_preview
 
 
-class FakeTile:
-    def __init__(self, row: int, col: int) -> None:
-        self.home_pos = (row, col)
-        self.rotation = 0
-        self.flipped = False
-
-    def rotate_cw(self, times: int = 1) -> None:
-        self.rotation = (self.rotation + 90 * times) % 360
-
-    def flip_horizontal(self) -> None:
-        self.flipped = not self.flipped
-
-    def reset_orientation(self) -> None:
-        self.rotation = 0
-        self.flipped = False
-
-
 def make_engine() -> BuiltInPuzzleEngine:
-    engine = BuiltInPuzzleEngine()
-    engine._tiles = [
-        [FakeTile(row, col) for col in range(3)]
-        for row in range(3)
-    ]
+    """A real engine with an unscrambled 3x3 puzzle made from random pixels."""
+    image = np.random.default_rng(0).integers(0, 255, (300, 300, 3), dtype=np.uint8)
+    engine = BuiltInPuzzleEngine(display_max_size=300)
+    engine.load_array(image, 3, scramble=False)
     return engine
 
 
 def snapshot(engine: BuiltInPuzzleEngine) -> tuple:
     return tuple(
-        (tile.home_pos, tile.rotation, tile.flipped)
-        for row in engine._tiles
-        for tile in row
+        (tile.home_index, tile.rotation, tile.flipped)
+        for tile in engine.tiles
     )
 
 

@@ -11,50 +11,21 @@ from transformations import (
 )
 
 
-class FakeTile:
-    def __init__(self, row: int, col: int) -> None:
-        self.home_pos = (row, col)
-        self.rotation = 0
-        self.flipped_horizontal = False
-        self.flipped_vertical = False
-
-    def rotate_clockwise(self, quarter_turns: int = 1) -> None:
-        self.rotation = (self.rotation + quarter_turns * 90) % 360
-
-    def rotate_cw(self, times: int = 1) -> None:
-        self.rotate_clockwise(times)
-
-    def flip_horizontal(self) -> None:
-        self.flipped_horizontal = not self.flipped_horizontal
-
-    def flip_vertical(self) -> None:
-        self.flipped_vertical = not self.flipped_vertical
-
-    def reset_orientation(self) -> None:
-        self.rotation = 0
-        self.flipped_horizontal = False
-        self.flipped_vertical = False
-
-    def is_orientation_correct(self) -> bool:
-        return (
-            self.rotation == 0
-            and not self.flipped_horizontal
-            and not self.flipped_vertical
-        )
-
-
 class TransformationGeneratorTests(unittest.TestCase):
     @staticmethod
-    def make_engine():
+    def make_engine(scramble=False):
+        """A real engine on a random-pixel 3x3 image (scrambled if asked)."""
+        import numpy as np
         from app import BuiltInPuzzleEngine
 
-        engine = BuiltInPuzzleEngine()
-        engine._grid_size = 3
-        engine._tiles = [
-            [FakeTile(row, col) for col in range(3)]
-            for row in range(3)
-        ]
+        image = np.random.default_rng(1).integers(0, 255, (300, 300, 3), dtype=np.uint8)
+        engine = BuiltInPuzzleEngine(display_max_size=300, rng=random.Random(3))
+        engine.load_array(image, 3, scramble=scramble)
         return engine
+
+    @staticmethod
+    def state(engine):
+        return tuple((t.home_index, t.rotation, t.flipped) for t in engine.tiles)
 
     def test_count_scales_with_grid_and_each_tile_is_targeted_once(self) -> None:
         expected_counts = {3: 6, 4: 12, 5: 20}
@@ -114,8 +85,7 @@ class TransformationGeneratorTests(unittest.TestCase):
             TransformationGenerator().generate(3, "Extreme")
 
     def test_generated_transformations_can_be_applied_and_solved_by_engine(self) -> None:
-        engine = self.make_engine()
-        engine._scramble_tiles()
+        engine = self.make_engine(scramble=True)
 
         self.assertGreater(len(engine.get_incorrect_positions()), 0)
         self.assertFalse(engine.can_undo)
@@ -123,24 +93,15 @@ class TransformationGeneratorTests(unittest.TestCase):
         self.assertEqual(engine.get_incorrect_positions(), [])
 
     def test_restart_restores_same_scramble_and_clears_move_history(self) -> None:
-        engine = self.make_engine()
-        engine._scramble_tiles()
-        initial_scramble = tuple(
-            (tile.home_pos, tile.rotation, tile.flipped_horizontal, tile.flipped_vertical)
-            for row in engine._tiles
-            for tile in row
-        )
+        engine = self.make_engine(scramble=True)
+        initial_scramble = self.state(engine)
 
         engine.swap_tiles((0, 0), (0, 1))
         engine.rotate_tile(1, 1)
         self.assertTrue(engine.can_undo)
 
         self.assertTrue(engine.restart())
-        restarted_state = tuple(
-            (tile.home_pos, tile.rotation, tile.flipped_horizontal, tile.flipped_vertical)
-            for row in engine._tiles
-            for tile in row
-        )
+        restarted_state = self.state(engine)
         self.assertEqual(restarted_state, initial_scramble)
         self.assertFalse(engine.can_undo)
         self.assertFalse(engine.can_redo)

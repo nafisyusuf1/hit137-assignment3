@@ -1,4 +1,4 @@
-﻿import os
+import os
 import random
 import time
 import tkinter as tk
@@ -8,7 +8,7 @@ import numpy as np
 
 from best_times import BestTimes
 from overlays import OverlayRenderer
-from transformations import TransformationGenerator
+from puzzle_engine import BuiltInPuzzleEngine, PuzzleEngine
 from panels import (
     ControlPanel,
     StatusPanel,
@@ -33,267 +33,6 @@ def move_grid_focus(
     )
 
 
-class Tile:
-    """Encapsulates a single puzzle tile's image, home coordinates, and transformations."""
-    def __init__(self, home_row: int, home_col: int, base_image: np.ndarray):
-        self._home_pos = (home_row, home_col)
-        self._base_image = base_image.copy()
-        self._rotation = 0
-        self._flipped_h = False
-        self._flipped_v = False
-
-    @property
-    def home_pos(self) -> tuple:
-        return self._home_pos
-
-    def rotate_cw(self, times: int = 1):
-        for _ in range(times % 4):
-            if self._flipped_h != self._flipped_v:
-                self._rotation = (self._rotation - 90) % 360
-            else:
-                self._rotation = (self._rotation + 90) % 360
-
-    def rotate_clockwise(self, quarter_turns: int = 1):
-        self.rotate_cw(quarter_turns)
-
-    def flip_horizontal(self):
-        self._flipped_h = not self._flipped_h
-
-    def flip_vertical(self):
-        self._flipped_v = not self._flipped_v
-
-    def reset_orientation(self):
-        self._rotation = 0
-        self._flipped_h = False
-        self._flipped_v = False
-
-    def get_transformed_image(self) -> np.ndarray:
-        img = self._base_image.copy()
-        if self._rotation == 90:
-            img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
-        elif self._rotation == 180:
-            img = cv2.rotate(img, cv2.ROTATE_180)
-        elif self._rotation == 270:
-            img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
-        if self._flipped_h:
-            img = cv2.flip(img, 1)
-        if self._flipped_v:
-            img = cv2.flip(img, 0)
-        return img
-
-    def is_orientation_correct(self) -> bool:
-        return np.array_equal(self.get_transformed_image(), self._base_image)
-
-
-class BuiltInPuzzleEngine:
-    """Handles OpenCV loading, scaling, cropping, random transformations, and puzzle state."""
-    def __init__(self, display_max_size: int = 450):
-        self._max_size = display_max_size
-        self._grid_size = 3
-        self._difficulty = "Normal"
-        self._original_image = None
-        self._tiles = []
-        self._undo_stack = []
-        self._redo_stack = []
-        self._transformation_generator = TransformationGenerator()
-        self._scramble_transformations = []
-
-    @property
-    def original_image(self) -> np.ndarray:
-        return self._original_image
-
-    @property
-    def grid_size(self) -> int:
-        return self._grid_size
-
-    @property
-    def difficulty(self) -> str:
-        return self._difficulty
-
-    def load_and_prepare(
-        self,
-        filepath: str,
-        grid_size: int,
-        raw_image: np.ndarray | None = None,
-        difficulty: str = "Normal",
-    ):
-        if (
-            isinstance(grid_size, bool)
-            or not isinstance(grid_size, int)
-            or grid_size not in (3, 4, 5)
-        ):
-            raise ValueError("Grid size must be 3, 4, or 5.")
-        if difficulty not in TransformationGenerator.DIFFICULTIES:
-            raise ValueError(
-                f"Difficulty must be one of: "
-                f"{', '.join(TransformationGenerator.DIFFICULTIES)}."
-            )
-        if raw_image is None:
-            raw = self.decode_image(filepath)
-        else:
-            raw = raw_image
-        if raw is None or raw.size == 0:
-            raise ValueError("Invalid image file. Please choose a valid JPG, PNG, or BMP file.")
-
-        prepared_image = self._resize_and_crop(raw, grid_size)
-        self._grid_size = grid_size
-        self._difficulty = difficulty
-        self._original_image = prepared_image
-        self._slice_tiles()
-        self._scramble_tiles()
-
-    @staticmethod
-    def decode_image(filepath: str) -> np.ndarray:
-        if not os.path.isfile(filepath):
-            raise FileNotFoundError(f"Image file not found: {filepath}")
-        raw = cv2.imdecode(np.fromfile(filepath, dtype=np.uint8), cv2.IMREAD_COLOR)
-        if raw is None or raw.size == 0:
-            raise ValueError("Invalid image file. Please choose a valid JPG, PNG, or BMP file.")
-        return raw
-
-    def _resize_and_crop(self, img: np.ndarray, grid_size: int) -> np.ndarray:
-        h, w = img.shape[:2]
-        scale = min(self._max_size / max(w, 1), self._max_size / max(h, 1))
-        nw, nh = max(grid_size * 20, int(w * scale)), max(grid_size * 20, int(h * scale))
-        resized = cv2.resize(img, (nw, nh), interpolation=cv2.INTER_AREA)
-        side = (min(nw, nh) // grid_size) * grid_size
-        xs, ys = (nw - side) // 2, (nh - side) // 2
-        return resized[ys:ys + side, xs:xs + side].copy()
-
-    def _slice_tiles(self):
-        h, w = self._original_image.shape[:2]
-        th, tw = h // self._grid_size, w // self._grid_size
-        self._tiles = [
-            [Tile(r, c, self._original_image[r * th:(r + 1) * th, c * tw:(c + 1) * tw]) for c in range(self._grid_size)]
-            for r in range(self._grid_size)
-        ]
-
-    def _scramble_tiles(self):
-        self._scramble_transformations = self._transformation_generator.generate(
-            self._grid_size, self._difficulty
-        )
-        for transformation in self._scramble_transformations:
-            transformation.apply(self)
-        self.clear_history()
-
-    def restart(self) -> bool:
-        """Restore the original scramble for this image and clear player history."""
-        if not self._tiles or not self._scramble_transformations:
-            return False
-        self.solve_all()
-        for transformation in self._scramble_transformations:
-            transformation.apply(self)
-        self.clear_history()
-        return True
-
-    def reassemble_image(self) -> np.ndarray:
-        return np.vstack([
-            np.hstack([self._tiles[r][c].get_transformed_image() for c in range(self._grid_size)])
-            for r in range(self._grid_size)
-        ])
-
-    def swap_tiles(self, p1: tuple, p2: tuple):
-        if p1 == p2:
-            return
-        self._swap_tiles(p1, p2)
-        self._record_action(("swap", (p1, p2)))
-
-    def _swap_tiles(self, p1: tuple, p2: tuple):
-        r1, c1 = p1
-        r2, c2 = p2
-        self._tiles[r1][c1], self._tiles[r2][c2] = self._tiles[r2][c2], self._tiles[r1][c1]
-
-    def swap_positions(self, first: int, second: int):
-        first_row, first_col = divmod(first, self._grid_size)
-        second_row, second_col = divmod(second, self._grid_size)
-        self._swap_tiles((first_row, first_col), (second_row, second_col))
-
-    def tile_at(self, position: int):
-        row, col = divmod(position, self._grid_size)
-        return self._tiles[row][col]
-
-    def rotate_tile(self, r: int, c: int):
-        self._tiles[r][c].rotate_cw(1)
-        self._record_action(("rotate", ((r, c),)))
-
-    def flip_tile(self, r: int, c: int):
-        self._tiles[r][c].flip_horizontal()
-        self._record_action(("flip", ((r, c),)))
-
-    @property
-    def can_undo(self) -> bool:
-        return bool(self._undo_stack)
-
-    @property
-    def can_redo(self) -> bool:
-        return bool(self._redo_stack)
-
-    def undo(self) -> bool:
-        if not self._undo_stack:
-            return False
-        action = self._undo_stack.pop()
-        self._apply_action(action, reverse=True)
-        self._redo_stack.append(action)
-        return True
-
-    def redo(self) -> bool:
-        if not self._redo_stack:
-            return False
-        action = self._redo_stack.pop()
-        self._apply_action(action)
-        self._undo_stack.append(action)
-        return True
-
-    def clear_history(self):
-        self._undo_stack.clear()
-        self._redo_stack.clear()
-
-    def _record_action(self, action):
-        self._undo_stack.append(action)
-        self._redo_stack.clear()
-
-    def _apply_action(self, action, reverse: bool = False):
-        action_type, positions = action
-        if action_type == "swap":
-            self._swap_tiles(*positions)
-        elif action_type == "rotate":
-            row, col = positions[0]
-            self._tiles[row][col].rotate_cw(3 if reverse else 1)
-        elif action_type == "flip":
-            row, col = positions[0]
-            self._tiles[row][col].flip_horizontal()
-        else:
-            raise ValueError(f"Unknown history action: {action_type}")
-
-    def is_tile_correct(self, r: int, c: int) -> bool:
-        t = self._tiles[r][c]
-        return t.home_pos == (r, c) and t.is_orientation_correct()
-
-    def get_correct_positions(self) -> list:
-        return [(r, c) for r in range(self._grid_size) for c in range(self._grid_size) if self.is_tile_correct(r, c)]
-
-    def get_incorrect_positions(self) -> list:
-        return [(r, c) for r in range(self._grid_size) for c in range(self._grid_size) if not self.is_tile_correct(r, c)]
-
-    def get_hint_pair(self) -> tuple:
-        inc = self.get_incorrect_positions()
-        if not inc:
-            return None, None
-        curr = random.choice(inc)
-        return curr, self._tiles[curr[0]][curr[1]].home_pos
-
-    def solve_all(self):
-        solved = [[None for _ in range(self._grid_size)] for _ in range(self._grid_size)]
-        for r in range(self._grid_size):
-            for c in range(self._grid_size):
-                t = self._tiles[r][c]
-                t.reset_orientation()
-                hr, hc = t.home_pos
-                solved[hr][hc] = t
-        self._tiles = solved
-        self.clear_history()
-
-
 class PuzzleApp:
     """Main Tkinter GUI Controller."""
     MAX_HINTS = 3
@@ -307,12 +46,13 @@ class PuzzleApp:
         self._root.configure(bg="#f6faff")
         self._configure_theme()
 
-        self._engine = BuiltInPuzzleEngine(display_max_size=450)
+        self._engine = PuzzleEngine(display_max_size=450)
         self._renderer = OverlayRenderer()
         self._best_times = BestTimes()
         self._moves = 0
         self._hints_left = self.MAX_HINTS
         self._selected_pos = None
+        self._engine.reset_selection()
         self._focused_pos = (0, 0)
         self._hint_curr = None
         self._hint_home = None
@@ -424,6 +164,7 @@ class PuzzleApp:
         self._moves = 0
         self._hints_left = self.MAX_HINTS
         self._selected_pos = None
+        self._engine.reset_selection()
         self._focused_pos = (0, 0)
         self._hint_curr = None
         self._hint_home = None
@@ -455,7 +196,7 @@ class PuzzleApp:
         return ImagePreviewDialog(
             self._root,
             filepath,
-            self._engine._resize_and_crop(raw_image, grid_size),
+            self._engine.prepare_preview(raw_image, grid_size),
             grid_size,
             difficulty,
         ).show()
@@ -467,15 +208,13 @@ class PuzzleApp:
     def _left_click(self, r: int, c: int):
         if not self._active:
             return
-        if self._selected_pos is None:
-            self._selected_pos = (r, c)
+        result = self._engine.left_click(r, c)
+        self._selected_pos = self._engine.selected_pos
+        if result == "selected":
             self._status.set_message(f"Tile ({r + 1}, {c + 1}) selected. Click another tile to swap.", "#0f172a")
-        elif self._selected_pos == (r, c):
-            self._selected_pos = None
+        elif result == "deselected":
             self._status.set_message("Selection cleared.", "#334155")
-        else:
-            self._engine.swap_tiles(self._selected_pos, (r, c))
-            self._selected_pos = None
+        elif result == "swapped":
             self._moves += 1
             self._clear_hint()
             self._update_history_buttons()
@@ -563,6 +302,7 @@ class PuzzleApp:
         self._engine.solve_all()
         self._moves = 0
         self._selected_pos = None
+        self._engine.reset_selection()
         self._clear_hint()
         self._active = False
         self._trans_panel.set_input_locked(True)
@@ -582,6 +322,7 @@ class PuzzleApp:
         self._moves = 0
         self._hints_left = self.MAX_HINTS
         self._selected_pos = None
+        self._engine.reset_selection()
         self._focused_pos = (0, 0)
         self._clear_hint()
         self._active = True
@@ -604,6 +345,7 @@ class PuzzleApp:
             self._active = True
         self._moves = max(0, self._moves - 1)
         self._selected_pos = None
+        self._engine.reset_selection()
         self._clear_hint()
         self._trans_panel.set_input_locked(False)
         self._ctrl.update_hint_button(self._hints_left, self._hints_left > 0)
@@ -617,6 +359,7 @@ class PuzzleApp:
             return
         self._moves += 1
         self._selected_pos = None
+        self._engine.reset_selection()
         self._clear_hint()
         self._update_history_buttons()
         self._status.set_message("Move redone.", "#334155")
@@ -661,6 +404,7 @@ class PuzzleApp:
             elapsed = self._stop_timer()
             self._active = False
             self._selected_pos = None
+            self._engine.reset_selection()
             self._clear_hint()
             self._trans_panel.set_input_locked(True)
             self._ctrl.set_solve_enabled(False)
