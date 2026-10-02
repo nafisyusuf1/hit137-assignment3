@@ -104,6 +104,12 @@ class PuzzleGameTests(unittest.TestCase):
         with self.assertRaises(TypeError):
             game.left_click(True)
 
+    def test_invalid_range_is_rejected_even_when_locked(self) -> None:
+        game = make_game()
+        game.solve()
+        with self.assertRaises(IndexError):
+            game.left_click(99)
+
     def test_status_supplies_gui_values(self) -> None:
         game = make_game()
         game.left_click(0)
