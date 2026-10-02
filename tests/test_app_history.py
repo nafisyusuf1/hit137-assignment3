@@ -5,6 +5,7 @@ import tempfile
 import unittest
 
 from app import BuiltInPuzzleEngine
+from panels import format_elapsed_time
 
 
 class FakeTile:
@@ -86,6 +87,12 @@ class PuzzleEngineHistoryTests(unittest.TestCase):
 
         self.assertFalse(engine.can_undo)
         self.assertFalse(engine.can_redo)
+
+    def test_elapsed_time_format_uses_minutes_and_hours(self) -> None:
+        self.assertEqual(format_elapsed_time(0), "00:00")
+        self.assertEqual(format_elapsed_time(125.9), "02:05")
+        self.assertEqual(format_elapsed_time(3600), "01:00:00")
+        self.assertEqual(format_elapsed_time(-3), "00:00")
 
     def test_load_rejects_unsupported_grid_before_reading_file(self) -> None:
         engine = BuiltInPuzzleEngine()

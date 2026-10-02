@@ -7,6 +7,7 @@ This project implements a picture-puzzle game where tiles can be swapped, rotate
 - 3x3, 4x4, and 5x5 puzzle boards
 - Tile swapping with move tracking
 - Rotation and flipping actions
+- Elapsed puzzle timer with completion time
 - Undo and redo for tile moves (also available with Ctrl+Z and Ctrl+Y)
 - Hint system with a limit of three hints
 - Image loading validates the selected grid and reports missing or invalid image files

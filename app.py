@@ -1,12 +1,19 @@
 ﻿import os
 import random
+import time
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import cv2
 import numpy as np
 
 from overlays import OverlayRenderer
-from panels import ControlPanel, StatusPanel, ImagePanel, InteractiveImagePanel
+from panels import (
+    ControlPanel,
+    StatusPanel,
+    ImagePanel,
+    InteractiveImagePanel,
+    format_elapsed_time,
+)
 
 
 class Tile:
@@ -247,9 +254,12 @@ class PuzzleApp:
         self._hint_curr = None
         self._hint_home = None
         self._active = False
+        self._timer_started_at = None
+        self._elapsed_seconds = 0.0
         self._build_ui()
         self._root.bind("<Control-z>", lambda _event: self._undo())
         self._root.bind("<Control-y>", lambda _event: self._redo())
+        self._root.after(250, self._update_timer)
 
     def _configure_theme(self):
         style = ttk.Style(self._root)
@@ -317,6 +327,9 @@ class PuzzleApp:
         self._hint_curr = None
         self._hint_home = None
         self._active = True
+        self._elapsed_seconds = 0.0
+        self._timer_started_at = time.monotonic()
+        self._status.set_elapsed_time(0)
         self._trans_panel.set_grid_size(gsize)
         self._trans_panel.set_input_locked(False)
         self._ctrl.update_hint_button(self._hints_left, True)
@@ -385,6 +398,7 @@ class PuzzleApp:
     def _solve(self):
         if not self._active:
             return
+        elapsed = self._stop_timer()
         self._engine.solve_all()
         self._moves = 0
         self._selected_pos = None
@@ -395,15 +409,21 @@ class PuzzleApp:
         self._ctrl.update_hint_button(self._hints_left, False)
         self._ctrl.set_solve_enabled(False)
         self._refresh()
-        self._status.set_message("Puzzle solved! Moves and score cleared. Load a new image to play again.", "#15803d")
+        self._status.set_message(
+            f"Puzzle solved in {format_elapsed_time(elapsed)}! Moves and score cleared. "
+            "Load a new image to play again.",
+            "#15803d",
+        )
 
     def _undo(self):
         if not self._engine.undo():
             return
+        if not self._active:
+            self._timer_started_at = time.monotonic()
+            self._active = True
         self._moves = max(0, self._moves - 1)
         self._selected_pos = None
         self._clear_hint()
-        self._active = True
         self._trans_panel.set_input_locked(False)
         self._ctrl.update_hint_button(self._hints_left, self._hints_left > 0)
         self._ctrl.set_solve_enabled(True)
@@ -425,6 +445,22 @@ class PuzzleApp:
     def _update_history_buttons(self):
         self._ctrl.set_history_enabled(self._engine.can_undo, self._engine.can_redo)
 
+    def _current_elapsed_time(self) -> float:
+        if self._timer_started_at is None:
+            return self._elapsed_seconds
+        return self._elapsed_seconds + time.monotonic() - self._timer_started_at
+
+    def _stop_timer(self) -> float:
+        self._elapsed_seconds = self._current_elapsed_time()
+        self._timer_started_at = None
+        self._status.set_elapsed_time(self._elapsed_seconds)
+        return self._elapsed_seconds
+
+    def _update_timer(self):
+        if self._active:
+            self._status.set_elapsed_time(self._current_elapsed_time())
+        self._root.after(250, self._update_timer)
+
     def _refresh(self):
         gs = self._engine.grid_size
         orig = self._renderer.render_original(self._engine.original_image, gs, self._hint_home)
@@ -440,6 +476,7 @@ class PuzzleApp:
 
     def _check_win(self):
         if self._active and len(self._engine.get_incorrect_positions()) == 0:
+            elapsed = self._stop_timer()
             self._active = False
             self._selected_pos = None
             self._clear_hint()
@@ -448,8 +485,15 @@ class PuzzleApp:
             self._ctrl.update_hint_button(self._hints_left, False)
             self._ctrl.set_solve_enabled(False)
             self._refresh()
-            self._status.set_message(f"Congratulations! Completed in {self._moves} moves!", "#15803d")
-            messagebox.showinfo("Puzzle Complete!", f"You restored the image in {self._moves} moves!")
+            elapsed_text = format_elapsed_time(elapsed)
+            self._status.set_message(
+                f"Congratulations! Completed in {self._moves} moves and {elapsed_text}!",
+                "#15803d",
+            )
+            messagebox.showinfo(
+                "Puzzle Complete!",
+                f"You restored the image in {self._moves} moves and {elapsed_text}!",
+            )
 
 
 if __name__ == "__main__":

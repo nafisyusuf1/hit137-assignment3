@@ -5,6 +5,16 @@ import numpy as np
 from PIL import Image, ImageTk
 
 
+def format_elapsed_time(seconds: float) -> str:
+    """Format elapsed time as MM:SS, or HH:MM:SS after an hour."""
+    elapsed = max(0, int(seconds))
+    hours, remainder = divmod(elapsed, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    return f"{minutes:02d}:{seconds:02d}"
+
+
 class BasePanel(ttk.Frame):
     """Base class for UI panels demonstrating OOP Inheritance."""
     def __init__(self, parent, **kwargs):
@@ -62,12 +72,13 @@ class ControlPanel(BasePanel):
 
 
 class StatusPanel(BasePanel):
-    """Displays Moves Used, Tiles Incorrect, and status messages."""
+    """Displays moves, tile progress, elapsed time, and status messages."""
     def __init__(self, parent):
         super().__init__(parent, padding=(12, 6))
         self._moves_var = tk.StringVar(value="Moves Used: 0")
         self._inc_var = tk.StringVar(value="Tiles Incorrect: 0")
         self._progress_var = tk.StringVar(value="0%")
+        self._time_var = tk.StringVar(value="Time: 00:00")
         self._msg_var = tk.StringVar(value="Choose grid size and click 'Load Image' to start.")
         self._build_ui()
 
@@ -80,6 +91,7 @@ class StatusPanel(BasePanel):
         self._progress = ttk.Progressbar(stats, maximum=100, length=110, mode="determinate")
         self._progress.pack(side=tk.LEFT, padx=(0, 6))
         ttk.Label(stats, textvariable=self._progress_var, font=("Segoe UI", 9, "bold"), foreground="#15803d", background="#f7f9fc", width=4).pack(side=tk.LEFT)
+        ttk.Label(stats, textvariable=self._time_var, font=("Segoe UI", 10, "bold"), foreground="#334155", background="#f7f9fc").pack(side=tk.LEFT, padx=(16, 0))
         self._msg_lbl = ttk.Label(self, textvariable=self._msg_var, font=("Segoe UI", 9), foreground="#1f2937", background="#f7f9fc", wraplength=900, justify=tk.LEFT)
         self._msg_lbl.pack(fill=tk.X, pady=(4, 0))
 
@@ -89,6 +101,9 @@ class StatusPanel(BasePanel):
         progress = round(correct_count / total_tiles * 100) if total_tiles else 0
         self._progress.configure(value=progress)
         self._progress_var.set(f"{progress}%")
+
+    def set_elapsed_time(self, seconds: float):
+        self._time_var.set(f"Time: {format_elapsed_time(seconds)}")
 
     def set_message(self, message: str, color: str = "#374151"):
         self._msg_var.set(message)
