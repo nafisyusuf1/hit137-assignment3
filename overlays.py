@@ -26,8 +26,8 @@ class Overlay(ABC):
 
 
 class GridOverlay(Overlay):
-    """Draws a faint grid over the transformed image."""
-    def __init__(self, color: tuple = (210, 210, 210), thickness: int = 1, alpha: float = 0.45):
+    """Draws a subtle grid and stronger tile separators over the transformed image."""
+    def __init__(self, color: tuple = (220, 220, 220), thickness: int = 1, alpha: float = 0.55):
         super().__init__(color, thickness)
         self._alpha = alpha
 
@@ -37,15 +37,15 @@ class GridOverlay(Overlay):
         h, w = out.shape[:2]
         th, tw = h // grid_size, w // grid_size
         for i in range(1, grid_size):
-            cv2.line(layer, (i * tw, 0), (i * tw, h), self._color, self._thickness)
-            cv2.line(layer, (0, i * th), (w, i * th), self._color, self._thickness)
+            cv2.line(layer, (i * tw, 0), (i * tw, h), self._color, self._thickness + 1, cv2.LINE_AA)
+            cv2.line(layer, (0, i * th), (w, i * th), self._color, self._thickness + 1, cv2.LINE_AA)
         cv2.addWeighted(layer, self._alpha, out, 1 - self._alpha, 0, out)
         return out
 
 
 class SelectionOverlay(Overlay):
-    """Highlights the selected tile with a coloured border."""
-    def __init__(self, color: tuple = (0, 215, 255), thickness: int = 4):
+    """Highlights the selected tile with a stronger outline and glow."""
+    def __init__(self, color: tuple = (0, 200, 255), thickness: int = 4):
         super().__init__(color, thickness)
 
     def draw(self, image: np.ndarray, grid_size: int, **kwargs) -> np.ndarray:
@@ -54,14 +54,15 @@ class SelectionOverlay(Overlay):
             return image
         out = image.copy()
         x1, y1, x2, y2 = self.get_tile_bounds(out, grid_size, pos[0], pos[1])
-        pad = self._thickness // 2 + 1
-        cv2.rectangle(out, (x1 + pad, y1 + pad), (x2 - pad, y2 - pad), self._color, self._thickness)
+        pad = max(2, self._thickness // 2 + 2)
+        cv2.rectangle(out, (x1 + pad, y1 + pad), (x2 - pad, y2 - pad), self._color, self._thickness, cv2.LINE_AA)
+        cv2.rectangle(out, (x1 + 1, y1 + 1), (x2 - 1, y2 - 1), (255, 255, 255), 1, cv2.LINE_AA)
         return out
 
 
 class TickOverlay(Overlay):
-    """Draws a small green tick in the corner of correct tiles."""
-    def __init__(self, color: tuple = (40, 200, 40), thickness: int = 2):
+    """Draws a green check mark on correctly placed tiles."""
+    def __init__(self, color: tuple = (24, 180, 24), thickness: int = 2):
         super().__init__(color, thickness)
 
     def draw(self, image: np.ndarray, grid_size: int, **kwargs) -> np.ndarray:
@@ -71,21 +72,22 @@ class TickOverlay(Overlay):
         out = image.copy()
         for r, c in correct:
             x1, y1, x2, y2 = self.get_tile_bounds(out, grid_size, r, c)
-            rad = max(10, min(x2 - x1, y2 - y1) // 8)
-            cx, cy = x2 - rad - 6, y1 + rad + 6
-            cv2.circle(out, (cx, cy), rad, (30, 165, 30), -1, cv2.LINE_AA)
-            cv2.circle(out, (cx, cy), rad, (255, 255, 255), 1, cv2.LINE_AA)
-            p1 = (int(cx - rad * 0.45), int(cy))
-            p2 = (int(cx - rad * 0.1), int(cy + rad * 0.4))
-            p3 = (int(cx + rad * 0.5), int(cy - rad * 0.35))
-            cv2.line(out, p1, p2, (255, 255, 255), self._thickness, cv2.LINE_AA)
-            cv2.line(out, p2, p3, (255, 255, 255), self._thickness, cv2.LINE_AA)
+            radius = max(10, min(x2 - x1, y2 - y1) // 7)
+            cx, cy = x2 - radius - 8, y1 + radius + 8
+            cv2.circle(out, (cx, cy), radius + 2, (20, 120, 20), -1, cv2.LINE_AA)
+            cv2.circle(out, (cx, cy), radius, self._color, -1, cv2.LINE_AA)
+            cv2.circle(out, (cx, cy), radius, (255, 255, 255), 1, cv2.LINE_AA)
+            p1 = (int(cx - radius * 0.45), int(cy))
+            p2 = (int(cx - radius * 0.1), int(cy + radius * 0.38))
+            p3 = (int(cx + radius * 0.5), int(cy - radius * 0.35))
+            cv2.line(out, p1, p2, (255, 255, 255), self._thickness + 1, cv2.LINE_AA)
+            cv2.line(out, p2, p3, (255, 255, 255), self._thickness + 1, cv2.LINE_AA)
         return out
 
 
 class HintOverlay(Overlay):
-    """Draws a blue circle on the hinted tile and its home position."""
-    def __init__(self, color: tuple = (255, 90, 0), thickness: int = 3):
+    """Draws a highlighted ring on the hinted tile and home position."""
+    def __init__(self, color: tuple = (255, 120, 30), thickness: int = 3):
         super().__init__(color, thickness)
 
     def draw(self, image: np.ndarray, grid_size: int, **kwargs) -> np.ndarray:
@@ -96,7 +98,7 @@ class HintOverlay(Overlay):
         x1, y1, x2, y2 = self.get_tile_bounds(out, grid_size, pos[0], pos[1])
         cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
         rad = int(min(x2 - x1, y2 - y1) * 0.35)
-        cv2.circle(out, (cx, cy), rad, (255, 255, 255), self._thickness + 2, cv2.LINE_AA)
+        cv2.circle(out, (cx, cy), rad + 3, (255, 255, 255), self._thickness + 2, cv2.LINE_AA)
         cv2.circle(out, (cx, cy), rad, self._color, self._thickness, cv2.LINE_AA)
         return out
 

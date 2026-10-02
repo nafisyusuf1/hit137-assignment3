@@ -9,12 +9,13 @@ class BasePanel(ttk.Frame):
     """Base class for UI panels demonstrating OOP Inheritance."""
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
+        self.configure(style="Panel.TFrame")
 
 
 class ControlPanel(BasePanel):
     """Toolbar with Load Image, Grid Size selector, Hint, and Solve controls."""
     def __init__(self, parent, on_load, on_grid_change, on_hint, on_solve):
-        super().__init__(parent, padding=(12, 8))
+        super().__init__(parent, padding=(12, 10))
         self._on_load = on_load
         self._on_grid_change = on_grid_change
         self._on_hint = on_hint
@@ -23,20 +24,20 @@ class ControlPanel(BasePanel):
         self._build_ui()
 
     def _build_ui(self):
-        ttk.Button(self, text="Load Image", command=self._on_load).pack(side=tk.LEFT, padx=(0, 12))
-        ttk.Label(self, text="Grid Size:", font=("Segoe UI", 10, "bold")).pack(side=tk.LEFT, padx=(0, 6))
-        self._combo = ttk.Combobox(self, textvariable=self._grid_var, values=["3x3", "4x4", "5x5"], state="readonly", width=6)
+        ttk.Button(self, text="Load Image", command=self._on_load, style="Primary.TButton").pack(side=tk.LEFT, padx=(0, 12))
+        ttk.Label(self, text="Grid Size:", style="FieldLabel.TLabel").pack(side=tk.LEFT, padx=(0, 6))
+        self._combo = ttk.Combobox(self, textvariable=self._grid_var, values=["3x3", "4x4", "5x5"], state="readonly", width=6, style="Input.TCombobox")
         self._combo.pack(side=tk.LEFT, padx=(0, 16))
         self._combo.bind("<<ComboboxSelected>>", lambda _e: self._on_grid_change(self.get_grid_size()))
 
-        self._hint_btn = ttk.Button(self, text="Hint (3 left)", command=self._on_hint, state=tk.DISABLED)
+        self._hint_btn = ttk.Button(self, text="Hint (3 left)", command=self._on_hint, state=tk.DISABLED, style="Secondary.TButton")
         self._hint_btn.pack(side=tk.LEFT, padx=(0, 8))
 
-        self._solve_btn = ttk.Button(self, text="Solve Puzzle", command=self._on_solve, state=tk.DISABLED)
+        self._solve_btn = ttk.Button(self, text="Solve Puzzle", command=self._on_solve, state=tk.DISABLED, style="Warning.TButton")
         self._solve_btn.pack(side=tk.LEFT, padx=(0, 8))
 
-        legend = "Left-Click: Select/Swap | Right-Click: Rotate 90 CW | Shift+Left-Click: Flip Horizontal"
-        ttk.Label(self, text=legend, foreground="#555555", font=("Segoe UI", 9)).pack(side=tk.RIGHT)
+        legend = "Left-Click: Select/Swap | Right-Click: Rotate 90° | Shift+Left-Click: Flip Horizontal"
+        ttk.Label(self, text=legend, style="Info.TLabel").pack(side=tk.RIGHT)
 
     def get_grid_size(self) -> int:
         return int(self._grid_var.get().split("x")[0])
@@ -52,25 +53,25 @@ class ControlPanel(BasePanel):
 class StatusPanel(BasePanel):
     """Displays Moves Used, Tiles Incorrect, and status messages."""
     def __init__(self, parent):
-        super().__init__(parent, padding=(12, 6))
+        super().__init__(parent, padding=(12, 8))
         self._moves_var = tk.StringVar(value="Moves Used: 0")
         self._inc_var = tk.StringVar(value="Tiles Incorrect: 0")
         self._msg_var = tk.StringVar(value="Choose grid size and click 'Load Image' to start.")
         self._build_ui()
 
     def _build_ui(self):
-        left = ttk.Frame(self)
+        left = ttk.Frame(self, style="Panel.TFrame")
         left.pack(side=tk.LEFT)
-        ttk.Label(left, textvariable=self._moves_var, font=("Segoe UI", 11, "bold"), foreground="#1a5fb4").pack(side=tk.LEFT, padx=(0, 20))
-        ttk.Label(left, textvariable=self._inc_var, font=("Segoe UI", 11, "bold"), foreground="#c01c28").pack(side=tk.LEFT, padx=(0, 20))
-        self._msg_lbl = ttk.Label(self, textvariable=self._msg_var, font=("Segoe UI", 10, "italic"), foreground="#333333")
+        ttk.Label(left, textvariable=self._moves_var, font=("Segoe UI", 11, "bold"), foreground="#1d4ed8", background="#f7f9fc").pack(side=tk.LEFT, padx=(0, 20))
+        ttk.Label(left, textvariable=self._inc_var, font=("Segoe UI", 11, "bold"), foreground="#b91c1c", background="#f7f9fc").pack(side=tk.LEFT, padx=(0, 20))
+        self._msg_lbl = ttk.Label(self, textvariable=self._msg_var, font=("Segoe UI", 10, "italic"), foreground="#374151", background="#f7f9fc")
         self._msg_lbl.pack(side=tk.RIGHT)
 
     def update_stats(self, moves: int, incorrect_count: int):
         self._moves_var.set(f"Moves Used: {moves}")
         self._inc_var.set(f"Tiles Incorrect: {incorrect_count}")
 
-    def set_message(self, message: str, color: str = "#333333"):
+    def set_message(self, message: str, color: str = "#374151"):
         self._msg_var.set(message)
         self._msg_lbl.config(foreground=color)
 
@@ -86,15 +87,16 @@ class ImagePanel(BasePanel):
         self._build_ui()
 
     def _build_ui(self):
-        ttk.Label(self, text=self._title, font=("Segoe UI", 11, "bold")).pack(pady=(0, 6))
-        self._canvas = tk.Canvas(self, width=self._canvas_size, height=self._canvas_size, bg="#2b2b2b", highlightthickness=2, highlightbackground="#cccccc")
+        ttk.Label(self, text=self._title, font=("Segoe UI", 11, "bold"), style="Heading.TLabel").pack(pady=(0, 6))
+        self._canvas = tk.Canvas(self, width=self._canvas_size, height=self._canvas_size, bg="#e2e8f0", highlightthickness=2, highlightbackground="#cbd5e1", relief="solid", bd=1)
         self._canvas.pack()
         self._draw_placeholder()
 
     def _draw_placeholder(self):
         self._canvas.delete("all")
         c = self._canvas_size // 2
-        self._canvas.create_text(c, c, text="No Image Loaded", fill="#888888", font=("Segoe UI", 13))
+        self._canvas.create_rectangle(12, 12, self._canvas_size - 12, self._canvas_size - 12, fill="#eef2ff", outline="#c4b5fd", width=2)
+        self._canvas.create_text(c, c, text="No Image Loaded", fill="#64748b", font=("Segoe UI", 13, "bold"))
         self._img_bounds = None
 
     def display_image(self, bgr_image: np.ndarray):

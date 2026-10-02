@@ -170,9 +170,8 @@ class PuzzleApp:
         self._root = root
         self._root.title("HIT137 Assignment 3 - OpenCV Tile Puzzle")
         self._root.resizable(False, False)
-        style = ttk.Style(self._root)
-        if "clam" in style.theme_names():
-            style.theme_use("clam")
+        self._root.configure(bg="#edf2ff")
+        self._configure_theme()
 
         self._engine = BuiltInPuzzleEngine(display_max_size=450)
         self._renderer = OverlayRenderer()
@@ -184,15 +183,36 @@ class PuzzleApp:
         self._active = False
         self._build_ui()
 
+    def _configure_theme(self):
+        style = ttk.Style(self._root)
+        if "clam" in style.theme_names():
+            style.theme_use("clam")
+
+        style.configure("Panel.TFrame", background="#f6f8fc")
+        style.configure("Heading.TLabel", background="#f6f8fc", foreground="#0f172a", font=("Segoe UI", 11, "bold"))
+        style.configure("FieldLabel.TLabel", background="#f6f8fc", foreground="#334155", font=("Segoe UI", 10, "bold"))
+        style.configure("Info.TLabel", background="#f6f8fc", foreground="#475569", font=("Segoe UI", 9))
+
+        style.configure("Primary.TButton", background="#2563eb", foreground="white", padding=(12, 8), font=("Segoe UI", 10, "bold"))
+        style.map("Primary.TButton", background=[("active", "#1d4ed8"), ("disabled", "#cbd5e1")], foreground=[("disabled", "#475569")])
+
+        style.configure("Secondary.TButton", background="#e2e8f0", foreground="#0f172a", padding=(9, 7), font=("Segoe UI", 10, "bold"))
+        style.map("Secondary.TButton", background=[("active", "#cbd5e1"), ("disabled", "#e2e8f0")], foreground=[("disabled", "#64748b")])
+
+        style.configure("Warning.TButton", background="#f59e0b", foreground="#111827", padding=(9, 7), font=("Segoe UI", 10, "bold"))
+        style.map("Warning.TButton", background=[("active", "#d97706"), ("disabled", "#fcd34d")], foreground=[("disabled", "#78350f")])
+
+        style.configure("Input.TCombobox", fieldbackground="#ffffff", background="#ffffff")
+
     def _build_ui(self):
         self._ctrl = ControlPanel(self._root, self._load_image, self._grid_changed, self._use_hint, self._solve)
         self._ctrl.pack(fill=tk.X)
-        ttk.Separator(self._root, orient=tk.HORIZONTAL).pack(fill=tk.X)
+        ttk.Separator(self._root, orient=tk.HORIZONTAL, style="Horizontal.TSeparator").pack(fill=tk.X, padx=6)
         self._status = StatusPanel(self._root)
         self._status.pack(fill=tk.X)
-        ttk.Separator(self._root, orient=tk.HORIZONTAL).pack(fill=tk.X)
+        ttk.Separator(self._root, orient=tk.HORIZONTAL, style="Horizontal.TSeparator").pack(fill=tk.X, padx=6)
 
-        body = ttk.Frame(self._root, padding=10)
+        body = ttk.Frame(self._root, padding=10, style="Panel.TFrame")
         body.pack(fill=tk.BOTH, expand=True)
         self._orig_panel = ImagePanel(body, "Original Image (Reference Only)", 460)
         self._orig_panel.pack(side=tk.LEFT, padx=(0, 10))
@@ -203,7 +223,7 @@ class PuzzleApp:
         self._trans_panel.pack(side=tk.LEFT)
 
     def _grid_changed(self, size: int):
-        self._status.set_message(f"Grid size set to {size}x{size}. Click 'Load Image' to start.")
+        self._status.set_message(f"Grid size set to {size}x{size}. Click 'Load Image' to start.", "#334155")
 
     def _load_image(self):
         path = filedialog.askopenfilename(
@@ -229,7 +249,7 @@ class PuzzleApp:
         self._trans_panel.set_input_locked(False)
         self._ctrl.update_hint_button(self._hints_left, True)
         self._ctrl.set_solve_enabled(True)
-        self._status.set_message(f"Loaded {os.path.basename(path)} ({gsize}x{gsize}). Restore the picture!")
+        self._status.set_message(f"Loaded {os.path.basename(path)} ({gsize}x{gsize}). Restore the picture!", "#1d4ed8")
         self._refresh()
 
     def _clear_hint(self):
@@ -241,16 +261,16 @@ class PuzzleApp:
             return
         if self._selected_pos is None:
             self._selected_pos = (r, c)
-            self._status.set_message(f"Tile ({r + 1}, {c + 1}) selected. Click another tile to swap.")
+            self._status.set_message(f"Tile ({r + 1}, {c + 1}) selected. Click another tile to swap.", "#0f172a")
         elif self._selected_pos == (r, c):
             self._selected_pos = None
-            self._status.set_message("Selection cleared.")
+            self._status.set_message("Selection cleared.", "#334155")
         else:
             self._engine.swap_tiles(self._selected_pos, (r, c))
             self._selected_pos = None
             self._moves += 1
             self._clear_hint()
-            self._status.set_message("Tiles swapped!")
+            self._status.set_message("Tiles swapped!", "#0f172a")
         self._refresh()
         self._check_win()
 
@@ -260,7 +280,7 @@ class PuzzleApp:
         self._engine.rotate_tile(r, c)
         self._moves += 1
         self._clear_hint()
-        self._status.set_message(f"Rotated tile ({r + 1}, {c + 1}) 90° clockwise.")
+        self._status.set_message(f"Rotated tile ({r + 1}, {c + 1}) 90° clockwise.", "#0f172a")
         self._refresh()
         self._check_win()
 
@@ -270,7 +290,7 @@ class PuzzleApp:
         self._engine.flip_tile(r, c)
         self._moves += 1
         self._clear_hint()
-        self._status.set_message(f"Flipped tile ({r + 1}, {c + 1}) horizontally.")
+        self._status.set_message(f"Flipped tile ({r + 1}, {c + 1}) horizontally.", "#0f172a")
         self._refresh()
         self._check_win()
 
@@ -283,7 +303,7 @@ class PuzzleApp:
         self._hint_curr, self._hint_home = curr, home
         self._hints_left -= 1
         self._ctrl.update_hint_button(self._hints_left, self._hints_left > 0)
-        self._status.set_message(f"Hint: Blue circle at ({curr[0]+1},{curr[1]+1}) belongs at ({home[0]+1},{home[1]+1}).", "#1a5fb4")
+        self._status.set_message(f"Hint: Tile ({curr[0]+1},{curr[1]+1}) belongs at ({home[0]+1},{home[1]+1}).", "#1d4ed8")
         self._refresh()
 
     def _solve(self):
@@ -299,7 +319,7 @@ class PuzzleApp:
         self._ctrl.set_solve_enabled(False)
         self._refresh()
         self._status.update_stats(0, 0)
-        self._status.set_message("Puzzle solved! Moves and score cleared. Load a new image to play again.", "#26a269")
+        self._status.set_message("Puzzle solved! Moves and score cleared. Load a new image to play again.", "#15803d")
 
     def _refresh(self):
         gs = self._engine.grid_size
@@ -321,7 +341,7 @@ class PuzzleApp:
             self._ctrl.update_hint_button(self._hints_left, False)
             self._ctrl.set_solve_enabled(False)
             self._refresh()
-            self._status.set_message(f"Congratulations! Completed in {self._moves} moves!", "#26a269")
+            self._status.set_message(f"Congratulations! Completed in {self._moves} moves!", "#15803d")
             messagebox.showinfo("Puzzle Complete!", f"You restored the image in {self._moves} moves!")
 
 
