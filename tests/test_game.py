@@ -128,6 +128,12 @@ class PuzzleGameTests(unittest.TestCase):
         game.board.rotate_at(0)
         self.assertFalse(game.has_hint)
 
+    def test_game_can_report_if_tile_is_valid_for_selection(self) -> None:
+        game = make_game()
+        self.assertTrue(game.can_select(0))
+        self.assertFalse(game.can_select(-1))
+        self.assertFalse(game.can_select(99))
+
 
 if __name__ == "__main__":
     unittest.main()
