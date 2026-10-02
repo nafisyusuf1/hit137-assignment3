@@ -62,6 +62,8 @@ class BuiltInPuzzleEngine:
         self._grid_size = 3
         self._original_image = None
         self._tiles = []
+        self._undo_stack = []
+        self._redo_stack = []
 
     @property
     def original_image(self) -> np.ndarray:
@@ -116,6 +118,7 @@ class BuiltInPuzzleEngine:
         if untouched:
             r, c = untouched.pop()
             self._tiles[r][c].rotate_cw(random.choice([1, 2, 3]))
+        self.clear_history()
 
     def reassemble_image(self) -> np.ndarray:
         return np.vstack([
@@ -124,15 +127,64 @@ class BuiltInPuzzleEngine:
         ])
 
     def swap_tiles(self, p1: tuple, p2: tuple):
+        self._swap_tiles(p1, p2)
+        self._record_action(("swap", (p1, p2)))
+
+    def _swap_tiles(self, p1: tuple, p2: tuple):
         r1, c1 = p1
         r2, c2 = p2
         self._tiles[r1][c1], self._tiles[r2][c2] = self._tiles[r2][c2], self._tiles[r1][c1]
 
-    def rotate_tile(self, r: int, c: int):
-        self._tiles[r][c].rotate_cw(1)
+    def rotate_tile(self, r: int, c: int, quarter_turns: int = 1):
+        self._tiles[r][c].rotate_cw(quarter_turns)
+        self._record_action(("rotate", ((r, c),)))
 
     def flip_tile(self, r: int, c: int):
         self._tiles[r][c].flip_horizontal()
+        self._record_action(("flip", ((r, c),)))
+
+    @property
+    def can_undo(self) -> bool:
+        return bool(self._undo_stack)
+
+    @property
+    def can_redo(self) -> bool:
+        return bool(self._redo_stack)
+
+    def undo(self) -> bool:
+        if not self._undo_stack:
+            return False
+        action = self._undo_stack.pop()
+        self._apply_action(action, reverse=True)
+        self._redo_stack.append(action)
+        return True
+
+    def redo(self) -> bool:
+        if not self._redo_stack:
+            return False
+        action = self._redo_stack.pop()
+        self._apply_action(action)
+        self._undo_stack.append(action)
+        return True
+
+    def clear_history(self):
+        self._undo_stack.clear()
+        self._redo_stack.clear()
+
+    def _record_action(self, action):
+        self._undo_stack.append(action)
+        self._redo_stack.clear()
+
+    def _apply_action(self, action, reverse: bool = False):
+        action_type, positions = action
+        if action_type == "swap":
+            self._swap_tiles(*positions)
+        elif action_type == "rotate":
+            row, col = positions[0]
+            self._tiles[row][col].rotate_cw(3 if reverse else 1)
+        else:
+            row, col = positions[0]
+            self._tiles[row][col].flip_horizontal()
 
     def is_tile_correct(self, r: int, c: int) -> bool:
         t = self._tiles[r][c]
@@ -160,6 +212,7 @@ class BuiltInPuzzleEngine:
                 hr, hc = t.home_pos
                 solved[hr][hc] = t
         self._tiles = solved
+        self.clear_history()
 
 
 class PuzzleApp:
@@ -184,6 +237,8 @@ class PuzzleApp:
         self._hint_home = None
         self._active = False
         self._build_ui()
+        self._root.bind("<Control-z>", lambda _event: self._undo())
+        self._root.bind("<Control-y>", lambda _event: self._redo())
 
     def _configure_theme(self):
         style = ttk.Style(self._root)
@@ -208,7 +263,10 @@ class PuzzleApp:
         style.configure("Horizontal.TProgressbar", troughcolor="#e2e8f0", background="#16a34a", bordercolor="#e2e8f0", lightcolor="#16a34a", darkcolor="#16a34a")
 
     def _build_ui(self):
-        self._ctrl = ControlPanel(self._root, self._load_image, self._grid_changed, self._use_hint, self._solve)
+        self._ctrl = ControlPanel(
+            self._root, self._load_image, self._grid_changed, self._use_hint,
+            self._solve, self._undo, self._redo
+        )
         self._ctrl.pack(fill=tk.X)
         ttk.Separator(self._root, orient=tk.HORIZONTAL, style="Horizontal.TSeparator").pack(fill=tk.X, padx=6)
         self._status = StatusPanel(self._root)
@@ -252,6 +310,7 @@ class PuzzleApp:
         self._trans_panel.set_input_locked(False)
         self._ctrl.update_hint_button(self._hints_left, True)
         self._ctrl.set_solve_enabled(True)
+        self._update_history_buttons()
         self._status.set_message(f"Loaded {os.path.basename(path)} ({gsize}x{gsize}). Restore the picture!", "#1d4ed8")
         self._refresh()
 
@@ -273,6 +332,7 @@ class PuzzleApp:
             self._selected_pos = None
             self._moves += 1
             self._clear_hint()
+            self._update_history_buttons()
             self._status.set_message("Tiles swapped!", "#0f172a")
         self._refresh()
         self._check_win()
@@ -283,6 +343,7 @@ class PuzzleApp:
         self._engine.rotate_tile(r, c)
         self._moves += 1
         self._clear_hint()
+        self._update_history_buttons()
         self._status.set_message(f"Rotated tile ({r + 1}, {c + 1}) 90° clockwise.", "#0f172a")
         self._refresh()
         self._check_win()
@@ -293,6 +354,7 @@ class PuzzleApp:
         self._engine.flip_tile(r, c)
         self._moves += 1
         self._clear_hint()
+        self._update_history_buttons()
         self._status.set_message(f"Flipped tile ({r + 1}, {c + 1}) horizontally.", "#0f172a")
         self._refresh()
         self._check_win()
@@ -318,10 +380,39 @@ class PuzzleApp:
         self._clear_hint()
         self._active = False
         self._trans_panel.set_input_locked(True)
+        self._update_history_buttons()
         self._ctrl.update_hint_button(self._hints_left, False)
         self._ctrl.set_solve_enabled(False)
         self._refresh()
         self._status.set_message("Puzzle solved! Moves and score cleared. Load a new image to play again.", "#15803d")
+
+    def _undo(self):
+        if not self._engine.undo():
+            return
+        self._moves = max(0, self._moves - 1)
+        self._selected_pos = None
+        self._clear_hint()
+        self._active = True
+        self._trans_panel.set_input_locked(False)
+        self._ctrl.update_hint_button(self._hints_left, self._hints_left > 0)
+        self._ctrl.set_solve_enabled(True)
+        self._update_history_buttons()
+        self._status.set_message("Last move undone.", "#334155")
+        self._refresh()
+
+    def _redo(self):
+        if not self._engine.redo():
+            return
+        self._moves += 1
+        self._selected_pos = None
+        self._clear_hint()
+        self._update_history_buttons()
+        self._status.set_message("Move redone.", "#334155")
+        self._refresh()
+        self._check_win()
+
+    def _update_history_buttons(self):
+        self._ctrl.set_history_enabled(self._engine.can_undo, self._engine.can_redo)
 
     def _refresh(self):
         gs = self._engine.grid_size
@@ -342,6 +433,7 @@ class PuzzleApp:
             self._selected_pos = None
             self._clear_hint()
             self._trans_panel.set_input_locked(True)
+            self._ctrl.set_solve_enabled(False)
             self._ctrl.update_hint_button(self._hints_left, False)
             self._ctrl.set_solve_enabled(False)
             self._refresh()

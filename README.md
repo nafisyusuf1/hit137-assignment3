@@ -7,6 +7,7 @@ This project implements a picture-puzzle game where tiles can be swapped, rotate
 - 3x3, 4x4, and 5x5 puzzle boards
 - Tile swapping with move tracking
 - Rotation and flipping actions
+- Undo and redo for tile moves (also available with Ctrl+Z and Ctrl+Y)
 - Hint system with a limit of three hints
 - Solve/reset handling and solved-state lockout
 - Unit tests covering the board and game logic
@@ -25,6 +26,6 @@ python -m unittest discover -s tests -q
 
 ## Project files
 
-- `game.py` - gameplay controller
-- `puzzle_board.py` - board state, rules, and move logic
+- `app.py` - Tkinter application and picture-puzzle engine
+- `panels.py` - application controls and image panels
 - `tests/` - unit tests for the game and board behavior

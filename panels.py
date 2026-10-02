@@ -13,13 +13,15 @@ class BasePanel(ttk.Frame):
 
 
 class ControlPanel(BasePanel):
-    """Toolbar with Load Image, Grid Size selector, Hint, and Solve controls."""
-    def __init__(self, parent, on_load, on_grid_change, on_hint, on_solve):
+    """Toolbar with image, history, hint, and solve controls."""
+    def __init__(self, parent, on_load, on_grid_change, on_hint, on_solve, on_undo, on_redo):
         super().__init__(parent, padding=(12, 10))
         self._on_load = on_load
         self._on_grid_change = on_grid_change
         self._on_hint = on_hint
         self._on_solve = on_solve
+        self._on_undo = on_undo
+        self._on_redo = on_redo
         self._grid_var = tk.StringVar(value="3x3")
         self._build_ui()
 
@@ -30,14 +32,23 @@ class ControlPanel(BasePanel):
         self._combo.pack(side=tk.LEFT, padx=(0, 16))
         self._combo.bind("<<ComboboxSelected>>", lambda _e: self._on_grid_change(self.get_grid_size()))
 
+        self._undo_btn = ttk.Button(self, text="Undo", command=self._on_undo, state=tk.DISABLED, style="Secondary.TButton")
+        self._undo_btn.pack(side=tk.LEFT, padx=(0, 6))
+        self._redo_btn = ttk.Button(self, text="Redo", command=self._on_redo, state=tk.DISABLED, style="Secondary.TButton")
+        self._redo_btn.pack(side=tk.LEFT, padx=(0, 8))
+
         self._hint_btn = ttk.Button(self, text="Hint (3 left)", command=self._on_hint, state=tk.DISABLED, style="Secondary.TButton")
         self._hint_btn.pack(side=tk.LEFT, padx=(0, 8))
 
         self._solve_btn = ttk.Button(self, text="Solve Puzzle", command=self._on_solve, state=tk.DISABLED, style="Warning.TButton")
         self._solve_btn.pack(side=tk.LEFT, padx=(0, 8))
 
-        legend = "Left-click: Select/Swap | Right-click: Rotate 90° | Shift+Left-click: Flip Horizontal"
+        legend = "Click: Select/Swap | Right-click: Rotate | Shift+Click: Flip | Ctrl+Z/Y: Undo/Redo"
         ttk.Label(self, text=legend, style="Info.TLabel", wraplength=450, justify=tk.RIGHT).pack(side=tk.RIGHT)
+
+    def set_history_enabled(self, can_undo: bool, can_redo: bool):
+        self._undo_btn.config(state=tk.NORMAL if can_undo else tk.DISABLED)
+        self._redo_btn.config(state=tk.NORMAL if can_redo else tk.DISABLED)
 
     def get_grid_size(self) -> int:
         return int(self._grid_var.get().split("x")[0])
